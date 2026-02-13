@@ -19,11 +19,7 @@ export default function WelcomeScreen() {
     // Only redirect if we're done loading AND user is authenticated
     if (!isLoading && isAuthenticated && user) {
       console.log('[Welcome] User is authenticated, redirecting to home');
-      // Use a small delay to ensure clean navigation
-      const timer = setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 50);
-      return () => clearTimeout(timer);
+      router.replace('/(tabs)/(home)/');
     }
   }, [isLoading, isAuthenticated, user, router]);
 
