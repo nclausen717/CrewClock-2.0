@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
   const isLoggingOutRef = useRef(false);
+  const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check session on mount
   useEffect(() => {
@@ -155,10 +156,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoggingOutRef.current = true;
     console.log('[Auth] Logout initiated...');
     
+    // Clear any pending navigation timeouts
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
+    }
+    
     try {
-      // Clear user state FIRST to prevent navigation loops
-      setUser(null);
-      
       // Try to notify server (with auth token before we clear it)
       try {
         await authenticatedPost('/api/auth/logout', {});
@@ -171,10 +175,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
       
-      console.log('[Auth] Local logout complete - user state cleared');
-      console.log('[Auth] Navigating to welcome screen');
+      // Clear user state AFTER token is removed to ensure consistency
+      setUser(null);
       
-      // Navigate to welcome screen
+      console.log('[Auth] Local logout complete - user state cleared');
+      
+      // Navigate to welcome screen immediately
+      console.log('[Auth] Navigating to welcome screen');
       router.replace('/');
       
       console.log('[Auth] Logout process complete');
@@ -186,14 +193,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       router.replace('/');
     } finally {
-      // Reset logout flag after navigation completes
-      // Use a longer timeout to ensure all navigation effects have settled
-      setTimeout(() => {
+      // Reset logout flag after a short delay to allow navigation to complete
+      navigationTimeoutRef.current = setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 500);
+      }, 300);
     }
   }, [router]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const value: AuthContextType = {
     user,

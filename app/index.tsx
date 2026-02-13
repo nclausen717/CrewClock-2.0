@@ -35,12 +35,8 @@ export default function WelcomeScreen() {
     );
   }
 
-  // If authenticated, show nothing (navigation will happen via useEffect)
-  // This prevents showing the welcome screen briefly before redirect
-  if (isAuthenticated && user) {
-    return null;
-  }
-
+  // Always render the welcome screen when not loading
+  // The useEffect will handle navigation if user is authenticated
   const crewText = 'Crew';
   const clockText = 'Clock';
 
