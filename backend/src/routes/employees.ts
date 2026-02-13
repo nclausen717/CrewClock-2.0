@@ -3,6 +3,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import { employees } from '../db/schema.js';
 import { account } from '../db/auth-schema.js';
+import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
  * Generate a secure random password
@@ -50,7 +51,7 @@ export function registerEmployeeRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       app.logger.info({ userId: session.user.id }, 'Fetching employees');
@@ -58,7 +59,7 @@ export function registerEmployeeRoutes(app: App) {
       try {
         // Only admins can view employees
         if (session.user.role !== 'admin') {
-          app.logger.warn({ userId: session.user.id }, 'Non-admin user attempted to view employees');
+          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'Non-admin user attempted to view employees');
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
@@ -119,7 +120,7 @@ export function registerEmployeeRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { name, isCrewLeader, email } = request.body as {
@@ -249,7 +250,7 @@ export function registerEmployeeRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { id } = request.params as { id: string };
@@ -387,7 +388,7 @@ export function registerEmployeeRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { id } = request.params as { id: string };

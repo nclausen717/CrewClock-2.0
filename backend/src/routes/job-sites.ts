@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { jobSites } from '../db/schema.js';
+import { requireAuthWithRole } from '../utils/auth.js';
 
 export function registerJobSitesRoutes(app: App) {
   const requireAuth = app.requireAuth();
@@ -35,7 +36,7 @@ export function registerJobSitesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       app.logger.info({ userId: session.user.id }, 'Fetching job sites');
@@ -103,7 +104,7 @@ export function registerJobSitesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { name, location } = request.body as { name: string; location: string };
@@ -185,7 +186,7 @@ export function registerJobSitesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { id } = request.params as { id: string };
@@ -273,7 +274,7 @@ export function registerJobSitesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { id } = request.params as { id: string };

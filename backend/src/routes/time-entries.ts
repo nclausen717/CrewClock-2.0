@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, isNull } from 'drizzle-orm';
 import { timeEntries, employees, jobSites } from '../db/schema.js';
+import { requireAuthWithRole } from '../utils/auth.js';
 
 export function registerTimeEntriesRoutes(app: App) {
   const requireAuth = app.requireAuth();
@@ -32,7 +33,7 @@ export function registerTimeEntriesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       app.logger.info({ userId: session.user.id }, 'Fetching employees for clock-in');
@@ -101,7 +102,7 @@ export function registerTimeEntriesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { employeeIds, jobSiteId, workDescription } = request.body as {
@@ -230,7 +231,7 @@ export function registerTimeEntriesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { employeeIds, workDescription } = request.body as {
@@ -335,7 +336,7 @@ export function registerTimeEntriesRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       app.logger.info({ userId: session.user.id }, 'Fetching active time entries');

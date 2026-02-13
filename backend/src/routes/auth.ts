@@ -464,4 +464,57 @@ export function registerAuthRoutes(app: App) {
       };
     }
   );
+
+  /**
+   * POST /api/auth/logout
+   * Logout - ends the user session
+   */
+  app.fastify.post(
+    '/api/auth/logout',
+    {
+      schema: {
+        description: 'Logout',
+        tags: ['auth'],
+        response: {
+          200: { type: 'object', properties: { success: { type: 'boolean' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const auth = await requireAuth(request, reply);
+      if (!auth) return;
+
+      app.logger.info({ userId: auth.user.id }, 'Logout attempt');
+
+      try {
+        // Get the session token from the request
+        const authHeader = request.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          app.logger.warn({ userId: auth.user.id }, 'Logout failed: no bearer token');
+          return reply.status(401).send({ error: 'Invalid token' });
+        }
+
+        const token = authHeader.slice(7); // Remove 'Bearer ' prefix
+
+        // Delete the session from database
+        const deletedSessions = await app.db
+          .delete(session)
+          .where(eq(session.token, token))
+          .returning();
+
+        if (deletedSessions.length === 0) {
+          app.logger.warn({ userId: auth.user.id }, 'Logout failed: session not found');
+          return reply.status(401).send({ error: 'Session not found' });
+        }
+
+        app.logger.info({ userId: auth.user.id }, 'Logout successful');
+
+        return { success: true };
+      } catch (error) {
+        app.logger.error({ err: error, userId: auth.user.id }, 'Logout error');
+        throw error;
+      }
+    }
+  );
 }
