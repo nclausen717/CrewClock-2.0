@@ -36,21 +36,21 @@ export default function HomeScreen() {
     return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
   };
 
-  const handleLogout = () => {
-    console.log('User tapped logout button');
+  const handleSwitchRole = () => {
+    console.log('User tapped Switch Role button');
     setModalVisible(true);
   };
 
-  const confirmLogout = async () => {
-    console.log('User confirmed logout');
+  const confirmSwitchRole = async () => {
+    console.log('User confirmed switch role');
     setModalVisible(false);
     setLoading(true);
     
     try {
       await logout();
-      console.log('Logout complete');
+      console.log('Switch role complete - returning to welcome screen');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Switch role error:', error);
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.greeting}>Welcome back,</Text>
               <Text style={styles.userName}>{userName}</Text>
             </View>
@@ -84,8 +84,29 @@ export default function HomeScreen() {
               />
             </View>
           </View>
-          <View style={[styles.roleBadge, { backgroundColor: `${roleColor}20` }]}>
-            <Text style={[styles.roleText, { color: roleColor }]}>{roleDisplay}</Text>
+          <View style={styles.roleBadgeRow}>
+            <View style={[styles.roleBadge, { backgroundColor: `${roleColor}20` }]}>
+              <Text style={[styles.roleText, { color: roleColor }]}>{roleDisplay}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.switchRoleButton}
+              onPress={handleSwitchRole}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.crewLeadPrimary} />
+              ) : (
+                <>
+                  <IconSymbol
+                    ios_icon_name="arrow.left.arrow.right"
+                    android_material_icon_name="swap-horiz"
+                    size={18}
+                    color={colors.crewLeadPrimary}
+                  />
+                  <Text style={styles.switchRoleText}>Switch Role</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -220,37 +241,16 @@ export default function HomeScreen() {
             />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={handleLogout}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.error} />
-          ) : (
-            <>
-              <IconSymbol
-                ios_icon_name="arrow.right.square.fill"
-                android_material_icon_name="logout"
-                size={24}
-                color={colors.error}
-                style={styles.logoutIcon}
-              />
-              <Text style={styles.logoutText}>Logout</Text>
-            </>
-          )}
-        </TouchableOpacity>
       </ScrollView>
 
       <Modal
         visible={modalVisible}
-        title="Confirm Logout"
-        message="Are you sure you want to logout?"
-        type="warning"
+        title="Switch Role"
+        message="This will return you to the login screen. Are you sure you want to switch roles?"
+        type="info"
         onClose={() => setModalVisible(false)}
-        onConfirm={confirmLogout}
-        confirmText="Logout"
+        onConfirm={confirmSwitchRole}
+        confirmText="Switch Role"
         cancelText="Cancel"
       />
     </SafeAreaView>
@@ -292,8 +292,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  roleBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   roleBadge: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
@@ -301,6 +305,22 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  switchRoleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: colors.crewLeadPrimary,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  switchRoleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.crewLeadPrimary,
   },
   section: {
     marginBottom: 32,
@@ -346,24 +366,5 @@ const styles = StyleSheet.create({
   actionDescription: {
     fontSize: 14,
     color: '#b0c4de',
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
-  logoutIcon: {
-    marginRight: 12,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.error,
   },
 });
