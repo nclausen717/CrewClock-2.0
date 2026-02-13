@@ -2,7 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, or, isNull } from 'drizzle-orm';
 import { employees } from '../db/schema.js';
-import { account } from '../db/auth-schema.js';
+import { user as userTable, account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
@@ -121,6 +121,8 @@ export function registerEmployeeRoutes(app: App) {
           },
           400: { type: 'object', properties: { error: { type: 'string' } } },
           401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+          409: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
     },
@@ -149,7 +151,7 @@ export function registerEmployeeRoutes(app: App) {
           return reply.status(400).send({ error: 'Email required for crew leaders' });
         }
 
-        // Check if email is already used
+        // Check if email is already used (in both users and employees tables)
         if (email) {
           const existingEmployee = await app.db
             .select()
@@ -157,39 +159,103 @@ export function registerEmployeeRoutes(app: App) {
             .where(eq(employees.email, email));
 
           if (existingEmployee.length > 0) {
-            app.logger.warn({ email }, 'Email already in use');
-            return reply.status(400).send({ error: 'Email already in use' });
+            app.logger.warn({ email }, 'Email already in use in employees table');
+            return reply.status(409).send({ error: 'An employee with this email already exists' });
+          }
+
+          // For crew leaders, also check if user exists
+          if (isCrewLeader) {
+            const existingUser = await app.db
+              .select()
+              .from(userTable)
+              .where(eq(userTable.email, email));
+
+            if (existingUser.length > 0) {
+              app.logger.warn({ email }, 'Email already in use in users table');
+              return reply.status(409).send({ error: 'An account with this email already exists' });
+            }
           }
         }
 
         let generatedPassword: string | null = null;
+        let newEmployee: any;
 
-        // Create employee
-        const [newEmployee] = await app.db
-          .insert(employees)
-          .values({
-            name,
-            email: email || null,
-            isCrewLeader,
-            createdBy: session.user.id,
-          })
-          .returning();
-
-        // If crew leader, create account with generated password
+        // If crew leader, create user account first, then employee
         if (isCrewLeader) {
+          const userId = crypto.randomUUID();
           generatedPassword = generatePassword();
-          const { hashPassword } = await import('better-auth/crypto');
-          const hashedPassword = await hashPassword(generatedPassword);
 
-          await app.db
-            .insert(account)
-            .values({
-              id: crypto.randomUUID(),
-              userId: newEmployee.id,
-              accountId: email!,
-              providerId: 'email',
-              password: hashedPassword,
+          try {
+            // Create user account
+            await app.db.insert(userTable).values({
+              id: userId,
+              email: email!,
+              name,
+              role: 'crew_lead',
             });
+
+            // Hash password and create account record
+            const { hashPassword } = await import('better-auth/crypto');
+            const hashedPassword = await hashPassword(generatedPassword);
+
+            await app.db
+              .insert(account)
+              .values({
+                id: crypto.randomUUID(),
+                userId,
+                accountId: email!,
+                providerId: 'email',
+                password: hashedPassword,
+              });
+
+            // Create employee record
+            const [employee] = await app.db
+              .insert(employees)
+              .values({
+                id: userId,
+                name,
+                email: email!,
+                isCrewLeader: true,
+                createdBy: session.user.id,
+              })
+              .returning();
+
+            newEmployee = employee;
+
+            app.logger.info({ userId, email }, 'Crew leader account and employee created');
+          } catch (error: any) {
+            app.logger.error(
+              { err: error, email },
+              'Failed to create crew leader account'
+            );
+            if (error.message?.includes('duplicate') || error.code === '23505') {
+              return reply.status(409).send({ error: 'An account with this email already exists' });
+            }
+            throw error;
+          }
+        } else {
+          // For regular employees, just create employee record
+          try {
+            const [employee] = await app.db
+              .insert(employees)
+              .values({
+                name,
+                email: email || null,
+                isCrewLeader: false,
+                createdBy: session.user.id,
+              })
+              .returning();
+
+            newEmployee = employee;
+
+            app.logger.info(
+              { employeeId: employee.id },
+              'Regular employee created'
+            );
+          } catch (error: any) {
+            app.logger.error({ err: error, email }, 'Failed to create employee');
+            throw error;
+          }
         }
 
         app.logger.info(
