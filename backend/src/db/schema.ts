@@ -40,5 +40,6 @@ export const timeEntries = pgTable('time_entries', {
   clockInTime: timestamp('clock_in_time', { withTimezone: true }).notNull(),
   clockOutTime: timestamp('clock_out_time', { withTimezone: true }),
   clockedInBy: text('clocked_in_by').notNull(), // crew leader user id who clocked them in
+  workDescription: text('work_description'), // optional description of work done
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
