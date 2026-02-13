@@ -1,3 +1,4 @@
+
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
@@ -22,7 +23,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)", // Ensure any route can link back to `/`
+  initialRouteName: "index", // Start at welcome screen
 };
 
 export default function RootLayout() {
@@ -85,8 +86,23 @@ export default function RootLayout() {
             <WidgetProvider>
               <GestureHandlerRootView>
               <Stack>
+                {/* Welcome/Login screens */}
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="login/admin" options={{ headerShown: false }} />
+                <Stack.Screen name="login/crew-lead" options={{ headerShown: false }} />
+                
                 {/* Main app with tabs */}
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                
+                {/* Other screens */}
+                <Stack.Screen name="clock-in" options={{ headerShown: false }} />
+                <Stack.Screen name="clock-out" options={{ headerShown: false }} />
+                <Stack.Screen name="employees" options={{ headerShown: false }} />
+                <Stack.Screen name="job-sites" options={{ headerShown: false }} />
+                <Stack.Screen name="reports" options={{ headerShown: false }} />
+                
+                {/* 404 */}
+                <Stack.Screen name="+not-found" options={{ headerShown: false }} />
               </Stack>
               <SystemBars style={"auto"} />
               </GestureHandlerRootView>

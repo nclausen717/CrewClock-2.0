@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { apiPost, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken } from '@/utils/api';
+import { useRouter, useSegments } from 'expo-router';
 
 interface User {
   id: string;
@@ -36,11 +37,30 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const segments = useSegments();
 
   // Check session on mount
   useEffect(() => {
     checkSession();
   }, []);
+
+  // Protected route navigation
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(tabs)';
+
+    if (!user && inAuthGroup) {
+      // User is not authenticated but trying to access protected routes
+      console.log('[Auth] Redirecting to welcome screen - user not authenticated');
+      router.replace('/');
+    } else if (user && !inAuthGroup && segments[0] !== 'login') {
+      // User is authenticated but on welcome screen
+      console.log('[Auth] Redirecting to home - user is authenticated');
+      router.replace('/(tabs)/(home)/');
+    }
+  }, [user, segments, isLoading]);
 
   const checkSession = async () => {
     console.log('[Auth] Checking session...');
@@ -109,8 +129,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await login(email, password, role);
   };
 
-  const logout = async () => {
-    console.log('[Auth] Logging out...');
+  const logout = useCallback(async () => {
+    console.log('[Auth] Logout initiated...');
     
     try {
       // Try to notify server first (with auth token)
@@ -122,11 +142,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } finally {
       // Always clear local state, even if server call fails
+      console.log('[Auth] Clearing local auth state...');
       setUser(null);
       await removeToken();
-      console.log('[Auth] Local logout complete');
+      console.log('[Auth] Local logout complete, navigating to welcome screen');
+      
+      // Navigate to welcome screen
+      router.replace('/');
     }
-  };
+  }, [router]);
 
   const value: AuthContextType = {
     user,

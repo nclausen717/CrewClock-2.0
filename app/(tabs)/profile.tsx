@@ -22,16 +22,14 @@ export default function ProfileScreen() {
 
   const confirmLogout = async () => {
     console.log('User confirmed logout');
+    setModalVisible(false);
     setLoading(true);
     
     try {
       await logout();
-      console.log('Logout successful, navigating to welcome screen');
-      router.replace('/');
+      console.log('Logout complete');
     } catch (error) {
       console.error('Logout error:', error);
-      // Still navigate even if there's an error
-      router.replace('/');
     } finally {
       setLoading(false);
     }
