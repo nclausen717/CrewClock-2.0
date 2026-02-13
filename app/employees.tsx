@@ -62,9 +62,9 @@ export default function EmployeesScreen() {
     setLoading(true);
     
     try {
-      const response = await authenticatedGet<{ employees: Employee[] }>('/api/employees');
-      console.log('[API] Employees fetched:', response.employees.length);
-      setEmployees(response.employees);
+      const response = await authenticatedGet<Employee[]>('/api/employees');
+      console.log('[API] Employees fetched:', response.length);
+      setEmployees(response);
     } catch (error: any) {
       console.error('[API] Failed to fetch employees:', error);
       const errorMessage = error?.message || error?.toString() || 'Failed to load employees. Please try again.';
