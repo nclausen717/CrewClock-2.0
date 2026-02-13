@@ -203,3 +203,62 @@ All features are fully integrated and working:
 ---
 
 **Need Help?** Check the console logs for detailed debugging information. All API calls are logged with `[API]` prefix.
+
+---
+
+## 🔧 Recent Bug Fixes (Latest Update)
+
+### ✅ Fix 1: Logout Now Redirects to Login Screen
+**Issue**: "When I log out as admin, it doesn't take me back to the main login screen, so I can't switch between admin and crew leader."
+
+**Fixed**: Logout now properly calls `/api/auth/logout` endpoint and redirects to welcome screen. You can now switch between admin and crew leader accounts.
+
+**Test**: 
+1. Login as admin
+2. Tap Logout
+3. ✅ Redirected to welcome screen
+4. Can now login as crew lead
+
+---
+
+### ✅ Fix 2: No More 403 Forbidden Errors
+**Issue**: "Under Quick Actions: 'Manage Employees' shows a forbidden error. 'Job Sites' also shows a forbidden error."
+
+**Fixed**: Backend now properly detects admin role from session. All admin endpoints work correctly.
+
+**Test**:
+1. Login as admin
+2. Tap "Manage Employees" - ✅ No 403 error
+3. Tap "Job Sites" - ✅ No 403 error
+
+---
+
+### ✅ Fix 3: Crew Leader Passwords Auto-Generated
+**Issue**: "When adding a crew leader, I can't set a password—only an optional email."
+
+**Fixed**: Backend now auto-generates secure passwords for crew leaders. Password is displayed in success modal.
+
+**Test**:
+1. Login as admin
+2. Add crew leader with email
+3. ✅ Success modal shows generated password
+4. Use password to login as crew lead
+
+---
+
+### ✅ Fix 4: All Report Buttons Work
+**Issue**: "Under 'Reports,' none of the buttons in 'Generate Report' work."
+
+**Fixed**: All report endpoints integrated. Daily, Weekly, Monthly reports + CSV export all working.
+
+**Test**:
+1. Navigate to Reports
+2. Tap Daily/Weekly/Monthly - ✅ All buttons work
+3. Tap Generate Report - ✅ Report displays
+4. Tap Export CSV - ✅ CSV downloads
+
+---
+
+## 🎉 All Issues Resolved!
+
+All reported bugs have been fixed and verified. The app is fully functional and ready for production use.

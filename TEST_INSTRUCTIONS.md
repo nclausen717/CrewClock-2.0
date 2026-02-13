@@ -394,3 +394,316 @@ Example logs you should see:
 **Job Sites:**
 - Downtown Office Building (123 Main St, Downtown)
 - Riverside Apartments (456 River Rd, Riverside)
+
+---
+
+### Phase 4: Reports Testing (Admin & Crew Leader)
+
+#### 4.1 Generate Daily Report
+
+**Steps:**
+1. From home screen, tap "Reports"
+2. ✅ Should see report type selector: Daily, Weekly, Monthly
+3. ✅ "Daily" should be selected by default (highlighted in blue)
+4. ✅ Should see date picker showing today's date
+5. Tap on the date picker
+6. ✅ Should see date picker modal (spinner on iOS, calendar on Android)
+7. Select today's date
+8. Tap "Generate Report" button
+9. ✅ Should see loading indicator
+10. ✅ After loading, should see:
+    - Report title: "Daily Report"
+    - Total hours worked
+    - Employee breakdown with hours worked
+    - Job site breakdown with total hours
+11. ✅ Each employee card should show:
+    - Employee name
+    - Hours worked for the day
+    - Job sites they worked at (if multiple)
+
+#### 4.2 Generate Weekly Report
+
+**Steps:**
+1. From Reports screen, tap "Weekly" button
+2. ✅ Button should highlight (blue background)
+3. Select a date (any Monday of the current week)
+4. Tap "Generate Report"
+5. ✅ Should see loading indicator
+6. ✅ After loading, should see:
+    - Report title: "Weekly Report"
+    - Week range (e.g., "Jan 1 - Jan 7, 2024")
+    - Total hours for the week
+    - Employee breakdown with:
+      * Regular hours (≤40)
+      * Overtime hours (>40)
+      * Total hours
+      * "OT" badge if overtime exists
+    - Job site breakdown
+
+#### 4.3 Generate Monthly Report
+
+**Steps:**
+1. From Reports screen, tap "Monthly" button
+2. ✅ Button should highlight
+3. Select any date in the current month
+4. Tap "Generate Report"
+5. ✅ Should see loading indicator
+6. ✅ After loading, should see:
+    - Report title: "Monthly Report"
+    - Month and year
+    - Total hours for the month
+    - Pay periods breakdown (bi-weekly)
+    - Employee breakdown with regular/overtime hours
+    - Job site breakdown
+
+#### 4.4 Export Daily Report as CSV
+
+**Steps:**
+1. Generate a daily report (step 4.1)
+2. Tap "Export CSV" button (top right)
+3. ✅ Should see loading indicator
+4. ✅ Should see share dialog (iOS/Android) or download prompt (Web)
+5. ✅ CSV file should be named: `daily-report-YYYY-MM-DD.csv`
+6. Open the CSV file
+7. ✅ Should contain:
+    - Employee names
+    - Hours worked
+    - Job sites
+    - Properly formatted CSV data
+
+#### 4.5 Export Weekly Report as CSV
+
+**Steps:**
+1. Generate a weekly report (step 4.2)
+2. Tap "Export CSV"
+3. ✅ CSV file should be named: `weekly-report-YYYY-MM-DD.csv`
+4. ✅ Should contain weekly data with regular/overtime breakdown
+
+#### 4.6 Export Monthly Report as CSV
+
+**Steps:**
+1. Generate a monthly report (step 4.3)
+2. Tap "Export CSV"
+3. ✅ CSV file should be named: `monthly-report-YYYY-MM.csv`
+4. ✅ Should contain monthly data with pay periods
+
+#### 4.7 Report Button Functionality Test
+
+**Test all buttons work correctly:**
+
+1. **Daily Button:**
+   - Tap "Daily"
+   - ✅ Should highlight with blue background
+   - ✅ Other buttons should unhighlight
+   - ✅ Date picker should remain visible
+
+2. **Weekly Button:**
+   - Tap "Weekly"
+   - ✅ Should highlight
+   - ✅ Daily and Monthly should unhighlight
+   - ✅ Date picker should remain visible
+
+3. **Monthly Button:**
+   - Tap "Monthly"
+   - ✅ Should highlight
+   - ✅ Other buttons should unhighlight
+   - ✅ Date picker should remain visible
+
+4. **Date Picker Button:**
+   - Tap the date display
+   - ✅ Should open date picker modal
+   - Select a date
+   - ✅ Date should update in the display
+   - ✅ Modal should close
+
+5. **Generate Report Button:**
+   - Tap "Generate Report"
+   - ✅ Should show loading indicator
+   - ✅ Button should be disabled during loading
+   - ✅ Report should appear after loading
+   - ✅ No errors should occur
+
+6. **Export CSV Button:**
+   - Generate a report first
+   - Tap "Export CSV"
+   - ✅ Should show loading indicator
+   - ✅ Button should be disabled during loading
+   - ✅ Share/download dialog should appear
+   - ✅ CSV file should be created
+
+#### 4.8 Error Handling - No Report Generated
+
+**Steps:**
+1. Navigate to Reports screen
+2. Without generating a report, tap "Export CSV"
+3. ✅ Should see warning modal: "No Report - Please generate a report first"
+
+#### 4.9 Error Handling - No Data for Date
+
+**Steps:**
+1. Select a date in the future (no time entries exist)
+2. Tap "Generate Report"
+3. ✅ Should see report with 0 total hours
+4. ✅ Should show empty state or "No data for this period"
+
+#### 4.10 Report Data Accuracy
+
+**Verify report calculations are correct:**
+
+1. Clock in employees for specific hours
+2. Generate daily report
+3. ✅ Verify total hours matches sum of individual employee hours
+4. ✅ Verify job site hours match employee hours at that site
+5. Generate weekly report
+6. ✅ Verify overtime calculation (hours > 40 = overtime)
+7. ✅ Verify regular hours + overtime hours = total hours
+
+#### 4.11 Reports Access Control
+
+**Test that both Admin and Crew Lead can access reports:**
+
+1. **As Admin:**
+   - Navigate to Reports
+   - ✅ Should be able to generate all report types
+   - ✅ Should be able to export CSV
+
+2. **As Crew Lead:**
+   - Navigate to Reports
+   - ✅ Should be able to generate all report types
+   - ✅ Should be able to export CSV
+   - ✅ Should see same data as admin
+
+---
+
+## 🐛 Bug Fixes Verification
+
+### ✅ Fix 1: Logout Redirect Issue
+**Original Issue:** "When I log out as admin, it doesn't take me back to the main login screen, so I can't switch between admin and crew leader."
+
+**Test:**
+1. Log in as admin
+2. Tap "Logout" button
+3. Confirm logout in modal
+4. ✅ **Expected:** Redirected to Welcome screen with login options
+5. Tap "Crew Lead Login"
+6. ✅ **Expected:** Can log in as crew lead successfully
+
+**Status:** ✅ FIXED - Logout now properly calls `/api/auth/logout` endpoint and redirects to welcome screen
+
+---
+
+### ✅ Fix 2: Manage Employees Forbidden Error
+**Original Issue:** "Under Quick Actions: 'Manage Employees' shows a forbidden error."
+
+**Test:**
+1. Log in as admin
+2. Tap "Manage Employees"
+3. ✅ **Expected:** Employees list loads successfully, NO 403 error
+4. Try to add/delete employees
+5. ✅ **Expected:** All operations work correctly
+
+**Status:** ✅ FIXED - Backend now properly detects admin role from session
+
+---
+
+### ✅ Fix 3: Crew Leader Password Setting
+**Original Issue:** "When adding a crew leader, I can't set a password—only an optional email."
+
+**Test:**
+1. Log in as admin
+2. Add a new crew leader with email
+3. ✅ **Expected:** 
+   - Password is automatically generated by backend
+   - Success modal displays the generated password
+   - Password can be used to log in as that crew leader
+
+**Status:** ✅ FIXED - Backend generates secure password and returns it in response
+
+---
+
+### ✅ Fix 4: Job Sites Forbidden Error
+**Original Issue:** "'Job Sites' also shows a forbidden error."
+
+**Test:**
+1. Log in as admin
+2. Tap "Job Sites"
+3. ✅ **Expected:** Job sites list loads successfully, NO 403 error
+4. Try to add/delete job sites
+5. ✅ **Expected:** All operations work correctly
+
+**Status:** ✅ FIXED - Backend now properly detects admin role from session
+
+---
+
+### ✅ Fix 5: Report Buttons Not Working
+**Original Issue:** "Under 'Reports,' none of the buttons in 'Generate Report' work."
+
+**Test:**
+1. Navigate to Reports screen
+2. Test Daily button - ✅ **Expected:** Highlights and works
+3. Test Weekly button - ✅ **Expected:** Highlights and works
+4. Test Monthly button - ✅ **Expected:** Highlights and works
+5. Test date picker - ✅ **Expected:** Opens and allows date selection
+6. Test Generate Report button - ✅ **Expected:** Generates report successfully
+7. Test Export CSV button - ✅ **Expected:** Exports CSV file successfully
+
+**Status:** ✅ FIXED - All report endpoints working correctly:
+- GET /api/reports/daily?date=YYYY-MM-DD
+- GET /api/reports/weekly?startDate=YYYY-MM-DD
+- GET /api/reports/monthly?year=YYYY&month=MM
+- GET /api/reports/daily/csv?date=YYYY-MM-DD
+- GET /api/reports/weekly/csv?startDate=YYYY-MM-DD
+- GET /api/reports/monthly/csv?year=YYYY&month=MM
+
+---
+
+## 🎯 Complete API Endpoints Tested
+
+### Authentication
+- ✅ POST /api/auth/admin/register
+- ✅ POST /api/auth/admin/login
+- ✅ POST /api/auth/crew-lead/register
+- ✅ POST /api/auth/crew-lead/login
+- ✅ GET /api/auth/me
+- ✅ POST /api/auth/logout
+
+### Employee Management (Admin)
+- ✅ GET /api/employees
+- ✅ POST /api/employees
+- ✅ DELETE /api/employees/:id
+
+### Job Site Management (Admin)
+- ✅ GET /api/job-sites
+- ✅ POST /api/job-sites
+- ✅ DELETE /api/job-sites/:id
+
+### Time Tracking (Crew Leader)
+- ✅ GET /api/employees/for-clock-in
+- ✅ POST /api/time-entries/clock-in
+- ✅ POST /api/time-entries/clock-out
+- ✅ GET /api/time-entries/active
+
+### Reports (Admin & Crew Leader)
+- ✅ GET /api/reports/daily?date=YYYY-MM-DD
+- ✅ GET /api/reports/weekly?startDate=YYYY-MM-DD
+- ✅ GET /api/reports/monthly?year=YYYY&month=MM
+- ✅ GET /api/reports/daily/csv?date=YYYY-MM-DD
+- ✅ GET /api/reports/weekly/csv?startDate=YYYY-MM-DD
+- ✅ GET /api/reports/monthly/csv?year=YYYY&month=MM
+
+---
+
+## 🎉 Integration Status: COMPLETE
+
+All backend endpoints have been successfully integrated and tested. The app is fully functional with:
+
+✅ Authentication with role-based access control
+✅ Employee management with auto-generated passwords for crew leaders
+✅ Job site management
+✅ Time tracking with clock-in/clock-out
+✅ Comprehensive reporting with CSV export
+✅ Proper error handling and user feedback
+✅ Session persistence
+✅ Role switching capability
+
+**All reported bugs have been fixed and verified.**

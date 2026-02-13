@@ -113,23 +113,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[Auth] Logging out...');
     
     try {
-      // Clear local state immediately (don't wait for server)
-      setUser(null);
-      await removeToken();
-      
-      // Try to notify server, but don't block on it
+      // Try to notify server first (with auth token)
       try {
-        await apiPost('/api/auth/logout', {}, true);
+        await authenticatedPost('/api/auth/logout', {});
+        console.log('[Auth] Server logout successful');
       } catch (error) {
         console.warn('[Auth] Server logout failed (non-critical):', error);
       }
-      
-      console.log('[Auth] Logout complete');
-    } catch (error) {
-      console.error('[Auth] Logout error:', error);
-      // Still clear local state even if server call fails
+    } finally {
+      // Always clear local state, even if server call fails
       setUser(null);
       await removeToken();
+      console.log('[Auth] Local logout complete');
     }
   };
 
