@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -39,13 +39,12 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.logoWrapper}>
-            <Image
-              source={require('@/assets/images/be80bfd2-6882-437c-af17-7801de35393b.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
+          <IconSymbol
+            ios_icon_name="clock.fill"
+            android_material_icon_name="schedule"
+            size={80}
+            color={colors.clockPrimary}
+          />
           <View style={styles.logoContainer}>
             <Text style={styles.crewText}>{crewText}</Text>
             <Text style={styles.clockText}>{clockText}</Text>
@@ -124,16 +123,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 60,
-  },
-  logoWrapper: {
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-    backgroundColor: 'transparent',
   },
   logoContainer: {
     flexDirection: 'row',
