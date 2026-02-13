@@ -28,23 +28,24 @@ export const Modal: React.FC<ModalProps> = ({
   const getIconAndColor = () => {
     switch (type) {
       case 'error':
-        return { icon: 'exclamationmark.triangle.fill', color: colors.error };
+        return { icon: 'exclamationmark.triangle.fill', androidIcon: 'error', color: colors.error };
       case 'success':
-        return { icon: 'checkmark.circle.fill', color: colors.success };
+        return { icon: 'checkmark.circle.fill', androidIcon: 'check-circle', color: colors.success };
       case 'warning':
-        return { icon: 'exclamationmark.circle.fill', color: colors.warning };
+        return { icon: 'exclamationmark.circle.fill', androidIcon: 'warning', color: colors.warning };
       default:
-        return { icon: 'info.circle.fill', color: colors.crewLeadPrimary };
+        return { icon: 'info.circle.fill', androidIcon: 'info', color: colors.crewLeadPrimary };
     }
   };
 
-  const { icon, color } = getIconAndColor();
+  const { icon, androidIcon, color } = getIconAndColor();
 
   const handleConfirm = () => {
     if (onConfirm) {
       onConfirm();
+    } else {
+      onClose();
     }
-    onClose();
   };
 
   return (
@@ -59,7 +60,7 @@ export const Modal: React.FC<ModalProps> = ({
           <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
             <IconSymbol
               ios_icon_name={icon}
-              android_material_icon_name="info"
+              android_material_icon_name={androidIcon}
               size={40}
               color={color}
             />

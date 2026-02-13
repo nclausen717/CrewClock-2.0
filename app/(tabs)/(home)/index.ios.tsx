@@ -1,12 +1,11 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
 import { Modal } from '@/components/ui/Modal';
 
 export default function HomeScreen() {
@@ -28,6 +27,7 @@ export default function HomeScreen() {
   const confirmLogout = async () => {
     console.log('User confirmed logout');
     setLoading(true);
+    setModalVisible(false);
     
     try {
       await logout();
@@ -35,11 +35,10 @@ export default function HomeScreen() {
       router.replace('/');
     } catch (error) {
       console.error('Logout error:', error);
-      // Always navigate to welcome screen even if logout fails
+      // Even if logout fails, redirect to welcome screen
       router.replace('/');
     } finally {
       setLoading(false);
-      setModalVisible(false);
     }
   };
 
@@ -48,7 +47,7 @@ export default function HomeScreen() {
   const roleColor = getRoleColor();
 
   return (
-    <View style={styles.container}>
+    <>
       <Stack.Screen
         options={{
           headerShown: false,
@@ -240,7 +239,7 @@ export default function HomeScreen() {
         confirmText="Logout"
         cancelText="Cancel"
       />
-    </View>
+    </>
   );
 }
 
@@ -248,7 +247,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.clockBackground,
-    paddingTop: 48,
   },
   scrollContent: {
     padding: 20,

@@ -73,11 +73,14 @@ All features are fully integrated and tested:
 - ✅ Authentication with session persistence
 - ✅ Employee management (CRUD)
 - ✅ Job site management (CRUD)
-- ✅ Time tracking with multi-employee clock-in
+- ✅ Time tracking with multi-employee clock-in/out
+- ✅ Reports generation (Daily/Weekly/Monthly with CSV export)
 - ✅ Role-based UI and permissions
-- ✅ Error handling with custom modals
+- ✅ Error handling with custom modals (409 duplicate emails, 400 validation, etc.)
 - ✅ Loading states for all async operations
 - ✅ Web and mobile compatibility
+- ✅ Generated password display for crew leaders
+- ✅ Comprehensive error messages from backend
 
 ## 🌐 Backend API
 

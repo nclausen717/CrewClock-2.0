@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const confirmLogout = async () => {
     console.log('User confirmed logout');
     setLoading(true);
+    setModalVisible(false);
     
     try {
       await logout();
@@ -35,10 +36,10 @@ export default function HomeScreen() {
       router.replace('/');
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, redirect to welcome screen
       router.replace('/');
     } finally {
       setLoading(false);
-      setModalVisible(false);
     }
   };
 
