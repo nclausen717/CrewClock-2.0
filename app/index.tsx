@@ -39,11 +39,13 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Image
-            source={require('@/assets/images/be80bfd2-6882-437c-af17-7801de35393b.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require('@/assets/images/be80bfd2-6882-437c-af17-7801de35393b.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <View style={styles.logoContainer}>
             <Text style={styles.crewText}>{crewText}</Text>
             <Text style={styles.clockText}>{clockText}</Text>
@@ -123,10 +125,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 60,
   },
+  logoWrapper: {
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+  },
   logo: {
     width: 120,
     height: 120,
     marginBottom: 20,
+    backgroundColor: 'transparent',
   },
   logoContainer: {
     flexDirection: 'row',
