@@ -41,12 +41,7 @@ export default function EmployeesScreen() {
     type: 'info' as 'info' | 'error' | 'success' | 'warning',
   });
 
-  useEffect(() => {
-    console.log('EmployeesScreen mounted, fetching employees');
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
+  const fetchEmployees = React.useCallback(async () => {
     console.log('[API] Fetching employees list');
     setLoading(true);
     
@@ -60,7 +55,12 @@ export default function EmployeesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log('EmployeesScreen mounted, fetching employees');
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const showModal = (title: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => {
     setModalConfig({ title, message, type });

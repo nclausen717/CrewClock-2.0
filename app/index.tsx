@@ -18,7 +18,7 @@ export default function WelcomeScreen() {
       console.log('[Welcome] User is authenticated, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, router]);
 
   // Show loading while checking session
   if (isLoading) {

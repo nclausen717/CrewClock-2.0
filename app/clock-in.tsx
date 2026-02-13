@@ -42,12 +42,7 @@ export default function ClockInScreen() {
     type: 'info' as 'info' | 'error' | 'success' | 'warning',
   });
 
-  useEffect(() => {
-    console.log('ClockInScreen mounted, fetching data');
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     console.log('[API] Fetching employees and job sites');
     setLoading(true);
     
@@ -66,7 +61,12 @@ export default function ClockInScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log('ClockInScreen mounted, fetching data');
+    fetchData();
+  }, [fetchData]);
 
   const showModal = (title: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => {
     setModalConfig({ title, message, type });
@@ -112,12 +112,12 @@ export default function ClockInScreen() {
     try {
       await authenticatedPost<{
         success: boolean;
-        entries: Array<{
+        entries: {
           id: string;
           employeeId: string;
           jobSiteId: string;
           clockInTime: string;
-        }>;
+        }[];
       }>('/api/time-entries/clock-in', {
         employeeIds,
         jobSiteId: selectedJobSite,

@@ -156,7 +156,10 @@ export default function HomeScreen() {
             </>
           )}
 
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push('/reports')}
+          >
             <View style={[styles.actionIconContainer, { backgroundColor: `${colors.adminPrimary}20` }]}>
               <IconSymbol
                 ios_icon_name="doc.text.fill"

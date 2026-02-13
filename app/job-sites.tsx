@@ -39,12 +39,7 @@ export default function JobSitesScreen() {
     type: 'info' as 'info' | 'error' | 'success' | 'warning',
   });
 
-  useEffect(() => {
-    console.log('JobSitesScreen mounted, fetching job sites');
-    fetchJobSites();
-  }, []);
-
-  const fetchJobSites = async () => {
+  const fetchJobSites = React.useCallback(async () => {
     console.log('[API] Fetching job sites list');
     setLoading(true);
     
@@ -58,7 +53,12 @@ export default function JobSitesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log('JobSitesScreen mounted, fetching job sites');
+    fetchJobSites();
+  }, [fetchJobSites]);
 
   const showModal = (title: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => {
     setModalConfig({ title, message, type });
