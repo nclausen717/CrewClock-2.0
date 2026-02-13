@@ -155,15 +155,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
       
-      // Clear user state FIRST before navigation
+      // Clear user state FIRST
       setUser(null);
       
-      // Reset loading state to ensure navigation logic runs
-      setIsLoading(false);
-      
       console.log('[Auth] Local logout complete - user state cleared');
+      
+      // Explicitly navigate to welcome screen
+      console.log('[Auth] Navigating to welcome screen');
+      router.replace('/');
     }
-  }, []);
+  }, [router]);
 
   const value: AuthContextType = {
     user,
