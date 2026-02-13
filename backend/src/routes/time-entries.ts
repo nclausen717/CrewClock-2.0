@@ -73,6 +73,7 @@ export function registerTimeEntriesRoutes(app: App) {
           properties: {
             employeeIds: { type: 'array', items: { type: 'string' } },
             jobSiteId: { type: 'string' },
+            workDescription: { type: 'string' },
           },
         },
         response: {
@@ -103,9 +104,10 @@ export function registerTimeEntriesRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { employeeIds, jobSiteId } = request.body as {
+      const { employeeIds, jobSiteId, workDescription } = request.body as {
         employeeIds: string[];
         jobSiteId: string;
+        workDescription?: string;
       };
 
       app.logger.info(
@@ -156,6 +158,7 @@ export function registerTimeEntriesRoutes(app: App) {
               jobSiteId,
               clockInTime: now,
               clockedInBy: session.user.id,
+              workDescription: workDescription || null,
             })
             .returning();
 
@@ -201,6 +204,7 @@ export function registerTimeEntriesRoutes(app: App) {
           required: ['employeeIds'],
           properties: {
             employeeIds: { type: 'array', items: { type: 'string' } },
+            workDescription: { type: 'string' },
           },
         },
         response: {
@@ -229,7 +233,10 @@ export function registerTimeEntriesRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { employeeIds } = request.body as { employeeIds: string[] };
+      const { employeeIds, workDescription } = request.body as {
+        employeeIds: string[];
+        workDescription?: string;
+      };
 
       app.logger.info({ userId: session.user.id, employeeCount: employeeIds.length }, 'Clocking out employees');
 
@@ -267,7 +274,10 @@ export function registerTimeEntriesRoutes(app: App) {
           if (activeEntries.length > 0) {
             const [updatedEntry] = await app.db
               .update(timeEntries)
-              .set({ clockOutTime: now })
+              .set({
+                clockOutTime: now,
+                workDescription: workDescription || activeEntries[0].workDescription,
+              })
               .where(eq(timeEntries.id, activeEntries[0].id))
               .returning();
 
