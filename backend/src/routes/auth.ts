@@ -272,6 +272,7 @@ export function registerAuthRoutes(app: App) {
             },
           },
           400: { type: 'object', properties: { error: { type: 'string' } } },
+          409: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
     },
@@ -286,7 +287,18 @@ export function registerAuthRoutes(app: App) {
 
         if (existingUsers.length > 0) {
           app.logger.warn({ email }, 'Crew lead registration failed: email already exists');
-          return reply.status(400).send({ error: 'Email already registered' });
+          return reply.status(409).send({ error: 'An account with this email already exists' });
+        }
+
+        // Check if employee already exists
+        const existingEmployees = await app.db
+          .select()
+          .from(employees)
+          .where(eq(employees.email, email));
+
+        if (existingEmployees.length > 0) {
+          app.logger.warn({ email }, 'Crew lead registration failed: employee with email already exists');
+          return reply.status(409).send({ error: 'An employee with this email already exists' });
         }
 
         // Hash password
@@ -334,8 +346,14 @@ export function registerAuthRoutes(app: App) {
             role: 'crew_lead',
           },
         });
-      } catch (error) {
+      } catch (error: any) {
         app.logger.error({ err: error, email }, 'Crew lead registration error');
+
+        // Handle duplicate key errors from the database
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          return reply.status(409).send({ error: 'An account with this email already exists' });
+        }
+
         throw error;
       }
     }
