@@ -48,9 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Protected route navigation
   useEffect(() => {
-    // Skip navigation during logout or loading to prevent conflicts
-    if (isLoading || isLoggingOutRef.current) {
-      console.log('[Auth] Skipping navigation check (loading or logging out)');
+    // Skip navigation during initial load
+    if (isLoading) {
+      console.log('[Auth] Skipping navigation check (loading)');
       return;
     }
 
@@ -63,8 +63,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       inAuthGroup, 
       onWelcomeScreen, 
       onLoginScreen,
-      segments
+      segments,
+      isLoggingOut: isLoggingOutRef.current
     });
+
+    // Don't navigate during logout process
+    if (isLoggingOutRef.current) {
+      console.log('[Auth] Skipping navigation (logout in progress)');
+      return;
+    }
 
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
@@ -168,14 +175,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state and ensure loading is false
+      // Clear user state - this will trigger the navigation effect
       setUser(null);
-      setIsLoading(false);
-      console.log('[Auth] User state cleared and loading set to false');
+      console.log('[Auth] User state cleared');
       
-      // Navigate to welcome screen
-      console.log('[Auth] Navigating to welcome screen');
+      // Navigate to welcome screen immediately
       router.replace('/');
+      console.log('[Auth] Navigated to welcome screen');
       
       console.log('[Auth] Logout process complete');
       
@@ -184,14 +190,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Even on error, clear local state
       await removeToken();
       setUser(null);
-      setIsLoading(false);
       router.replace('/');
     } finally {
       // Reset logout flag after navigation completes
       setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 100);
+      }, 500);
     }
   }, [router]);
 
