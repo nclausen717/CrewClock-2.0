@@ -16,16 +16,20 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // If no user, show loading while redirecting
-  if (!user && !isLoading) {
+  // Show loading state while auth is initializing
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={[styles.scrollContent, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
           <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-          <Text style={{ color: '#ffffff', marginTop: 16 }}>Redirecting...</Text>
         </View>
       </SafeAreaView>
     );
+  }
+
+  // If no user, return null and let AuthContext handle redirect
+  if (!user) {
+    return null;
   }
 
   const getRoleColor = () => {

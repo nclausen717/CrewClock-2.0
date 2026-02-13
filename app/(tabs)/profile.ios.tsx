@@ -15,14 +15,18 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // If no user, show loading while redirecting
-  if (!user && !isLoading) {
+  // Show loading state while auth is initializing
+  if (isLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-        <Text style={{ color: '#ffffff', marginTop: 16 }}>Redirecting...</Text>
       </View>
     );
+  }
+
+  // If no user, return null and let AuthContext handle redirect
+  if (!user) {
+    return null;
   }
 
   const handleLogout = async () => {
