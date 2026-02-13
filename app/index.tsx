@@ -17,19 +17,13 @@ export default function WelcomeScreen() {
     console.log('[Welcome] Auth state:', { isLoading, isAuthenticated, hasUser: !!user });
     
     // Only redirect if we're done loading AND user is authenticated
-    // Add a small delay to prevent race conditions with logout
     if (!isLoading && isAuthenticated && user) {
-      console.log('[Welcome] User is authenticated, scheduling redirect to home');
-      const timeoutId = setTimeout(() => {
-        console.log('[Welcome] Executing redirect to home');
-        router.replace('/(tabs)/(home)/');
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
+      console.log('[Welcome] User is authenticated, redirecting to home');
+      router.replace('/(tabs)/(home)/');
     }
   }, [isLoading, isAuthenticated, user, router]);
 
-  // Show loading while checking session
+  // Show loading ONLY during initial session check
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -41,16 +35,10 @@ export default function WelcomeScreen() {
     );
   }
 
-  // Show loading spinner while redirecting authenticated user
+  // If authenticated, show nothing (navigation will happen via useEffect)
+  // This prevents showing the welcome screen briefly before redirect
   if (isAuthenticated && user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={[styles.content, { justifyContent: 'center' }]}>
-          <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-          <Text style={[styles.subtitle, { marginTop: 16 }]}>Redirecting...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return null;
   }
 
   const crewText = 'Crew';
