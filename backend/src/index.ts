@@ -5,6 +5,7 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerEmployeeRoutes } from './routes/employees.js';
 import { registerJobSitesRoutes } from './routes/job-sites.js';
 import { registerTimeEntriesRoutes } from './routes/time-entries.js';
+import { registerReportsRoutes } from './routes/reports.js';
 
 // Combine both schemas for full database type support
 const schema = { ...appSchema, ...authSchema };
@@ -23,6 +24,7 @@ registerAuthRoutes(app);
 registerEmployeeRoutes(app);
 registerJobSitesRoutes(app);
 registerTimeEntriesRoutes(app);
+registerReportsRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
