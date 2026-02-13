@@ -145,7 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = useCallback(async () => {
-    // Prevent multiple logout calls and navigation conflicts
+    // Prevent multiple logout calls
     if (isLoggingOutRef.current) {
       console.log('[Auth] Logout already in progress, skipping...');
       return;
@@ -155,11 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[Auth] Logout initiated...');
     
     try {
-      // Clear user state FIRST to immediately update UI
-      setUser(null);
-      console.log('[Auth] User state cleared');
-      
-      // Try to notify server (with auth token before we clear it)
+      // Try to notify server first (while we still have the token)
       try {
         await authenticatedPost('/api/auth/logout', {});
         console.log('[Auth] Server logout successful');
@@ -170,10 +166,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear local storage
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
+      console.log('[Auth] Token removed');
       
-      console.log('[Auth] Local logout complete');
+      // Clear user state - this will trigger navigation effect
+      setUser(null);
+      console.log('[Auth] User state cleared');
       
-      // Navigate to welcome screen immediately - no delay needed since state is already cleared
+      // Navigate to welcome screen
       console.log('[Auth] Navigating to welcome screen');
       router.replace('/');
       
@@ -182,19 +181,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('[Auth] Logout error:', error);
       // Even on error, clear local state
-      setUser(null);
       await removeToken();
+      setUser(null);
       router.replace('/');
     } finally {
-      // Reset logout flag after a short delay
+      // Reset logout flag after navigation completes
       setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 300);
+      }, 500);
     }
   }, [router]);
-
-
 
   const value: AuthContextType = {
     user,

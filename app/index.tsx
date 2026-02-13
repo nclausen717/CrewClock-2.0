@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,20 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { isLoading, isAuthenticated, user } = useAuth();
-
-  // Auth Bootstrap: Check session and redirect if authenticated
-  useEffect(() => {
-    console.log('[Welcome] Auth state:', { isLoading, isAuthenticated, hasUser: !!user });
-    
-    // Only redirect if we're done loading AND user is authenticated
-    if (!isLoading && isAuthenticated && user) {
-      console.log('[Welcome] User is authenticated, redirecting to home');
-      router.replace('/(tabs)/(home)/');
-    } else if (!isLoading) {
-      console.log('[Welcome] Rendering welcome screen for unauthenticated user');
-    }
-  }, [isLoading, isAuthenticated, user]);
+  const { isLoading } = useAuth();
 
   // Show loading ONLY during initial session check
   if (isLoading) {
@@ -38,7 +25,8 @@ export default function WelcomeScreen() {
     );
   }
 
-  // Always render the welcome screen when not loading and not authenticated
+  // Always render the welcome screen when not loading
+  // The AuthContext navigation effect will handle redirects if user is authenticated
   console.log('[Welcome] Rendering welcome screen content');
   const crewText = 'Crew';
   const clockText = 'Clock';
