@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, gte, lte, isNotNull } from 'drizzle-orm';
 import { timeEntries, employees, jobSites } from '../db/schema.js';
+import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
  * Calculate hours between two dates
@@ -133,7 +134,7 @@ export function registerReportsRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { date } = request.query as { date: string };
@@ -273,7 +274,7 @@ export function registerReportsRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { startDate } = request.query as { startDate: string };
@@ -426,7 +427,7 @@ export function registerReportsRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { year, month } = request.query as { year: string; month: string };
@@ -611,7 +612,7 @@ export function registerReportsRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { date } = request.query as { date: string };
@@ -686,7 +687,7 @@ export function registerReportsRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { startDate } = request.query as { startDate: string };
@@ -790,7 +791,7 @@ export function registerReportsRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const session = await requireAuth(request, reply);
+      const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
       const { year, month } = request.query as { year: string; month: string };
