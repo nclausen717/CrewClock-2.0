@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Protected route navigation
   useEffect(() => {
-    if (isLoading || isLoggingOut) return;
+    if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
     const onWelcomeScreen = segments.length === 0;
@@ -63,11 +63,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isLoggingOut
     });
 
-    if (!user && inAuthGroup) {
+    if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
-      console.log('[Auth] User logged out, redirecting to welcome screen');
+      // OR user is not on welcome/login screen
+      console.log('[Auth] User not authenticated, redirecting to welcome screen');
       router.replace('/');
-    } else if (user && onWelcomeScreen) {
+    } else if (user && onWelcomeScreen && !isLoggingOut) {
       // User is authenticated and on welcome screen, redirect to home
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
       router.replace('/(tabs)/(home)/');
@@ -158,26 +159,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
       
-      // Clear user state
+      // Clear user state FIRST
       setUser(null);
       
       console.log('[Auth] Local logout complete - user state cleared');
-      
-      // Small delay to ensure state is updated before navigation
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Explicitly navigate to welcome screen
-      console.log('[Auth] Navigating to welcome screen');
-      router.replace('/');
       
     } catch (error) {
       console.error('[Auth] Logout error:', error);
       // Even on error, clear local state
       await removeToken();
       setUser(null);
-      router.replace('/');
     } finally {
+      // Reset isLoggingOut AFTER clearing user state
       setIsLoggingOut(false);
+      
+      // Force navigation to welcome screen after state is cleared
+      // Use setTimeout to ensure this happens after React finishes updating
+      setTimeout(() => {
+        console.log('[Auth] Force navigating to welcome screen');
+        router.replace('/');
+      }, 50);
     }
   }, [router]);
 

@@ -12,9 +12,21 @@ import { Modal } from '@/components/ui/Modal';
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // If no user, show loading while redirecting
+  if (!user && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.scrollContent, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
+          <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
+          <Text style={{ color: '#ffffff', marginTop: 16 }}>Redirecting...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleLogout = async () => {
     setModalVisible(true);

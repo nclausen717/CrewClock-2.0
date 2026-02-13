@@ -11,10 +11,22 @@ import { Modal } from '@/components/ui/Modal';
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // If no user, show loading while redirecting
+  if (!user && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.scrollContent, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
+          <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
+          <Text style={{ color: '#ffffff', marginTop: 16 }}>Redirecting...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const getRoleColor = () => {
     return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
