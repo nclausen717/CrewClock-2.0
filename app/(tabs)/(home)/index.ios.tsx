@@ -79,29 +79,55 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           
           {user?.role === 'crew_lead' && (
-            <TouchableOpacity 
-              style={styles.actionCard}
-              onPress={() => router.push('/clock-in')}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
+            <>
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => router.push('/clock-in')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
+                  <IconSymbol
+                    ios_icon_name="clock.fill"
+                    android_material_icon_name="access-time"
+                    size={28}
+                    color={colors.crewLeadPrimary}
+                  />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Clock In Team</Text>
+                  <Text style={styles.actionDescription}>Clock in employees at job site</Text>
+                </View>
                 <IconSymbol
-                  ios_icon_name="clock.fill"
-                  android_material_icon_name="access-time"
-                  size={28}
-                  color={colors.crewLeadPrimary}
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color="#b0c4de"
                 />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>Clock In Team</Text>
-                <Text style={styles.actionDescription}>Clock in employees at job site</Text>
-              </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron-right"
-                size={20}
-                color="#b0c4de"
-              />
-            </TouchableOpacity>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => router.push('/clock-out')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: `${colors.error}20` }]}>
+                  <IconSymbol
+                    ios_icon_name="clock.badge.xmark"
+                    android_material_icon_name="schedule"
+                    size={28}
+                    color={colors.error}
+                  />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Clock Out Team</Text>
+                  <Text style={styles.actionDescription}>Clock out active employees</Text>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
+            </>
           )}
 
           {user?.role === 'admin' && (

@@ -1,4 +1,5 @@
 
+// Clock Out Screen - app/clock-out.tsx will be created separately
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +34,7 @@ export default function ClockInScreen() {
   const [jobSites, setJobSites] = useState<JobSite[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [selectedJobSite, setSelectedJobSite] = useState<string | null>(null);
+  const [workDescription, setWorkDescription] = useState<string>('');
   const [showJobSiteModal, setShowJobSiteModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +113,20 @@ export default function ClockInScreen() {
     setSubmitting(true);
 
     try {
+      const requestBody: {
+        employeeIds: string[];
+        jobSiteId: string;
+        workDescription?: string;
+      } = {
+        employeeIds,
+        jobSiteId: selectedJobSite,
+      };
+
+      // Add work description if provided
+      if (workDescription.trim()) {
+        requestBody.workDescription = workDescription.trim();
+      }
+
       await authenticatedPost<{
         success: boolean;
         entries: {
@@ -118,10 +135,7 @@ export default function ClockInScreen() {
           jobSiteId: string;
           clockInTime: string;
         }[];
-      }>('/api/time-entries/clock-in', {
-        employeeIds,
-        jobSiteId: selectedJobSite,
-      });
+      }>('/api/time-entries/clock-in', requestBody);
       
       const selectedEmployeeNames = employees
         .filter(emp => selectedEmployees.has(emp.id))
@@ -136,6 +150,7 @@ export default function ClockInScreen() {
 
       setSelectedEmployees(new Set());
       setSelectedJobSite(null);
+      setWorkDescription('');
       setShowJobSiteModal(false);
     } catch (error: any) {
       console.error('[API] Error clocking in:', error);
@@ -278,6 +293,20 @@ export default function ClockInScreen() {
                 );
               })}
             </ScrollView>
+
+            <View style={styles.workDescriptionContainer}>
+              <Text style={styles.workDescriptionLabel}>Work Description (Optional)</Text>
+              <TextInput
+                style={styles.workDescriptionInput}
+                placeholder="Describe the work being done today..."
+                placeholderTextColor="#b0c4de"
+                value={workDescription}
+                onChangeText={setWorkDescription}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -483,8 +512,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   jobSiteList: {
-    maxHeight: 300,
+    maxHeight: 250,
+    marginBottom: 16,
+  },
+  workDescriptionContainer: {
     marginBottom: 20,
+  },
+  workDescriptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  workDescriptionInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    padding: 12,
+    color: '#ffffff',
+    fontSize: 14,
+    minHeight: 80,
   },
   jobSiteCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

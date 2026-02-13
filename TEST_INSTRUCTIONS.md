@@ -119,7 +119,7 @@
 5. ✅ Verify "Welcome, John Crew Lead!" with Crew Lead badge (orange color)
 6. ✅ Verify you see "Clock In Team" action card (NOT "Manage Employees" or "Job Sites")
 
-#### 2.2 Clock In Multiple Employees
+#### 2.2 Clock In Multiple Employees (with Work Description)
 
 **Steps:**
 1. From home screen, tap "Clock In Team"
@@ -136,12 +136,15 @@
 12. ✅ Should see list of job sites: Downtown Office Building, Riverside Apartments
 13. Tap on "Downtown Office Building"
 14. ✅ Card should highlight with checkmark
-15. Tap "Confirm Clock In"
-16. ✅ Should see success modal:
+15. ✅ Should see "Work Description (Optional)" text input field
+16. Type in work description: "Installing electrical wiring on 3rd floor"
+17. Tap "Confirm Clock In"
+18. ✅ Should see success modal:
     - "Clock In Successful"
     - "Successfully clocked in: James Smith, David Johnson, Emma Wilson"
     - "at Downtown Office Building"
-17. ✅ Modal should close and selections should be cleared
+19. ✅ Modal should close and selections should be cleared
+20. ✅ Work description field should be cleared
 
 #### 2.3 Clock In Single Employee
 
@@ -175,6 +178,60 @@
 3. In job site modal, tap "Cancel"
 4. ✅ Modal should close
 5. ✅ Employee selections should remain (not cleared)
+
+#### 2.7 Clock Out Multiple Employees (with Work Description)
+
+**Steps:**
+1. From home screen, tap "Clock Out Team"
+2. ✅ Should see list of active employees with:
+   - Employee name
+   - Job site location
+   - Clock-in time (e.g., "In: 9:30 AM")
+   - Hours worked (e.g., "2h 15m")
+3. ✅ Header should show "0 selected"
+4. Tap on "James Smith" card
+5. ✅ Card should highlight with red border and checkmark
+6. ✅ Header should show "1 selected"
+7. Tap on "David Johnson"
+8. ✅ Header should show "2 selected"
+9. ✅ Should see "Work Description (Optional)" text input field
+10. Type in work description: "Completed electrical installation and cleanup"
+11. Tap "Clock Out All (2)" button at bottom
+12. ✅ Should see success modal:
+    - "Clock Out Successful"
+    - "Successfully clocked out: James Smith, David Johnson"
+13. ✅ Modal should close and selections should be cleared
+14. ✅ Work description field should be cleared
+15. ✅ Clocked out employees should be removed from the list
+
+#### 2.8 Clock Out Single Employee
+
+**Steps:**
+1. From Clock Out screen, find "Emma Wilson"
+2. Tap the clock icon on the right side of her card (NOT the checkbox)
+3. ✅ Should see success modal: "Successfully clocked out Emma Wilson"
+4. ✅ Emma Wilson should be removed from the active list
+
+#### 2.9 Clock Out Without Work Description
+
+**Steps:**
+1. Clock in some employees (repeat step 2.2)
+2. Go to Clock Out screen
+3. Select employees
+4. Leave work description field empty
+5. Tap "Clock Out All"
+6. ✅ Should successfully clock out without requiring work description
+7. ✅ Work description is optional, not required
+
+#### 2.10 Empty Active Employees State
+
+**Steps:**
+1. Clock out all remaining employees
+2. ✅ Should see empty state:
+   - Clock icon
+   - "No active employees"
+   - "All employees are clocked out"
+3. ✅ Clock Out button should not be visible
 
 ---
 
@@ -236,7 +293,9 @@
 
 ### Time Tracking (Crew Leader)
 - ✅ GET /api/employees/for-clock-in
-- ✅ POST /api/time-entries/clock-in
+- ✅ POST /api/time-entries/clock-in (with optional workDescription)
+- ✅ POST /api/time-entries/clock-out (with optional workDescription)
+- ✅ GET /api/time-entries/active
 
 ---
 
@@ -285,8 +344,15 @@ Example logs you should see:
 - ✅ Crew leader can view employees for clock-in
 - ✅ Crew leader can select multiple employees
 - ✅ Crew leader can select job site
-- ✅ Clock-in creates time entries successfully
+- ✅ Crew leader can add optional work description when clocking in
+- ✅ Clock-in creates time entries successfully with work description
 - ✅ Success message shows employee names and job site
+- ✅ Crew leader can view active employees with clock-in times
+- ✅ Crew leader can clock out multiple employees at once
+- ✅ Crew leader can clock out single employee individually
+- ✅ Crew leader can add optional work description when clocking out
+- ✅ Clock-out updates time entries successfully with work description
+- ✅ Active employees list updates in real-time after clock-out
 
 ### UI/UX
 - ✅ Custom Modal component for all feedback (no Alert.alert)
