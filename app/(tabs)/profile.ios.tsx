@@ -1,35 +1,71 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
+import { Modal } from '@/components/ui/Modal';
 
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleLogout = () => {
-    console.log('User tapped logout button');
-    // TODO: Backend Integration - POST /api/auth/logout → { success: true }
-    router.replace('/');
+  const handleLogout = async () => {
+    setModalVisible(true);
   };
+
+  const confirmLogout = async () => {
+    console.log('User confirmed logout');
+    setLoading(true);
+    
+    try {
+      await logout();
+      console.log('Logout successful, navigating to welcome screen');
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Always navigate to welcome screen even if logout fails
+      router.replace('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRoleColor = () => {
+    return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
+  };
+
+  const getRoleDisplay = () => {
+    if (!user) return 'Unknown';
+    return user.role === 'admin' ? 'Admin' : 'Crew Lead';
+  };
+
+  const userName = user?.name || 'User';
+  const userEmail = user?.email || 'user@example.com';
+  const roleDisplay = getRoleDisplay();
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <View style={styles.avatarContainer}>
+          <View style={[styles.avatarContainer, { backgroundColor: getRoleColor() }]}>
             <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
+              ios_icon_name={user?.role === 'admin' ? 'shield.fill' : 'person.fill'}
+              android_material_icon_name={user?.role === 'admin' ? 'admin-panel-settings' : 'person'}
               size={48}
               color="#ffffff"
             />
           </View>
-          <Text style={styles.name}>User Name</Text>
-          <Text style={styles.role}>Role: Crew Lead / Admin</Text>
+          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.email}>{userEmail}</Text>
+          <View style={[styles.roleBadge, { backgroundColor: `${getRoleColor()}20` }]}>
+            <Text style={[styles.roleText, { color: getRoleColor() }]}>{roleDisplay}</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -108,17 +144,38 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <IconSymbol
-            ios_icon_name="arrow.right.square.fill"
-            android_material_icon_name="logout"
-            size={24}
-            color={colors.error}
-            style={styles.logoutIcon}
-          />
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.error} />
+          ) : (
+            <>
+              <IconSymbol
+                ios_icon_name="arrow.right.square.fill"
+                android_material_icon_name="logout"
+                size={24}
+                color={colors.error}
+                style={styles.logoutIcon}
+              />
+              <Text style={styles.logoutText}>Logout</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        visible={modalVisible}
+        title="Confirm Logout"
+        message="Are you sure you want to logout?"
+        type="warning"
+        onClose={() => setModalVisible(false)}
+        onConfirm={confirmLogout}
+        confirmText="Logout"
+        cancelText="Cancel"
+      />
     </View>
   );
 }
@@ -151,9 +208,19 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 4,
   },
-  role: {
-    fontSize: 16,
+  email: {
+    fontSize: 14,
     color: '#b0c4de',
+    marginBottom: 12,
+  },
+  roleBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  roleText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   section: {
     marginBottom: 24,

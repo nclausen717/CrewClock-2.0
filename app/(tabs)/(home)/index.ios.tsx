@@ -35,6 +35,7 @@ export default function HomeScreen() {
       router.replace('/');
     } catch (error) {
       console.error('Logout error:', error);
+      // Always navigate to welcome screen even if logout fails
       router.replace('/');
     } finally {
       setLoading(false);

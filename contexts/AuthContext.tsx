@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiPost, authenticatedGet, saveToken, getToken, removeToken } from '@/utils/api';
+import { apiPost, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken } from '@/utils/api';
 
 interface User {
   id: string;
