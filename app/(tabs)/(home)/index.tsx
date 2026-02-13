@@ -207,61 +207,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol
-              ios_icon_name="gear"
-              android_material_icon_name="settings"
-              size={24}
-              color="#b0c4de"
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>Settings</Text>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color="#b0c4de"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol
-              ios_icon_name="bell.fill"
-              android_material_icon_name="notifications"
-              size={24}
-              color="#b0c4de"
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>Notifications</Text>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color="#b0c4de"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol
-              ios_icon_name="info.circle.fill"
-              android_material_icon_name="info"
-              size={24}
-              color="#b0c4de"
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>About</Text>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color="#b0c4de"
-            />
-          </TouchableOpacity>
-        </View>
-
         <TouchableOpacity 
           style={styles.logoutButton} 
           onPress={handleLogout}
@@ -387,29 +332,6 @@ const styles = StyleSheet.create({
   actionDescription: {
     fontSize: 14,
     color: '#b0c4de',
-  },
-  menuItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  menuIcon: {
-    marginRight: 16,
-  },
-  menuText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#ffffff',
   },
   logoutButton: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
