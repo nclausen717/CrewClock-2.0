@@ -1,19 +1,24 @@
 
 import { StyleSheet } from 'react-native';
 
-// CrewClock color palette - professional work/time tracking theme
+// CrewClock color palette - Orange for Crew, Deep Blue for Clock
 export const colors = {
-  // Crew Lead colors - Blue theme (trust, reliability)
-  crewLeadPrimary: '#2563eb',
-  crewLeadSecondary: '#3b82f6',
-  crewLeadAccent: '#60a5fa',
-  crewLeadLight: '#dbeafe',
+  // Crew Lead colors - Orange theme (energy, teamwork)
+  crewLeadPrimary: '#ff6b35',
+  crewLeadSecondary: '#ff8c42',
+  crewLeadAccent: '#ffa552',
+  crewLeadLight: '#ffe5d9',
   
-  // Admin colors - Purple theme (authority, management)
-  adminPrimary: '#7c3aed',
-  adminSecondary: '#8b5cf6',
-  adminAccent: '#a78bfa',
-  adminLight: '#ede9fe',
+  // Admin colors - Deep Blue theme (time, precision, depth)
+  adminPrimary: '#003d5b',
+  adminSecondary: '#005f8a',
+  adminAccent: '#0077b6',
+  adminLight: '#cce7f5',
+  
+  // Clock/Time colors - Deep Blue background
+  clockBackground: '#001f3f',
+  clockPrimary: '#003d5b',
+  clockSecondary: '#005f8a',
   
   // Neutral colors
   background: '#ffffff',

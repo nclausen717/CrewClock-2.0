@@ -16,6 +16,10 @@ export default function HomeScreen() {
     return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
   };
 
+  const welcomeTitle = `Welcome, ${user?.name || 'User'}!`;
+  const welcomeText = 'Your time tracking and crew management system';
+  const roleDisplay = user?.role === 'admin' ? 'Admin Dashboard' : 'Crew Lead Dashboard';
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen
@@ -33,13 +37,11 @@ export default function HomeScreen() {
             size={48}
             color={getRoleColor()}
           />
-          <Text style={styles.welcomeTitle}>Welcome, {user?.name || 'User'}!</Text>
-          <Text style={styles.welcomeText}>
-            Your time tracking and crew management system
-          </Text>
+          <Text style={styles.welcomeTitle}>{welcomeTitle}</Text>
+          <Text style={styles.welcomeText}>{welcomeText}</Text>
           <View style={[styles.roleBadge, { backgroundColor: `${getRoleColor()}20` }]}>
             <Text style={[styles.roleText, { color: getRoleColor() }]}>
-              {user?.role === 'admin' ? 'Admin Dashboard' : 'Crew Lead Dashboard'}
+              {roleDisplay}
             </Text>
           </View>
         </View>
@@ -53,7 +55,7 @@ export default function HomeScreen() {
                 ios_icon_name="clock.fill"
                 android_material_icon_name="access-time"
                 size={32}
-                color={colors.crewLeadPrimary}
+                color={colors.clockPrimary}
               />
             </View>
             <View style={styles.actionContent}>
@@ -70,7 +72,7 @@ export default function HomeScreen() {
                 ios_icon_name="doc.text.fill"
                 android_material_icon_name="description"
                 size={32}
-                color={colors.adminPrimary}
+                color={colors.clockSecondary}
               />
             </View>
             <View style={styles.actionContent}>
@@ -87,7 +89,7 @@ export default function HomeScreen() {
                 ios_icon_name="person.3.fill"
                 android_material_icon_name="group"
                 size={32}
-                color={colors.success}
+                color={colors.crewLeadPrimary}
               />
             </View>
             <View style={styles.actionContent}>
@@ -104,7 +106,7 @@ export default function HomeScreen() {
             ios_icon_name="info.circle.fill"
             android_material_icon_name="info"
             size={24}
-            color={colors.crewLeadPrimary}
+            color={colors.clockPrimary}
             style={styles.infoIcon}
           />
           <Text style={styles.infoText}>
@@ -203,7 +205,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   infoBox: {
-    backgroundColor: colors.crewLeadLight,
+    backgroundColor: colors.adminLight,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',

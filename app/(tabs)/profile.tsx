@@ -46,6 +46,10 @@ export default function ProfileScreen() {
     return user.role === 'admin' ? 'Admin' : 'Crew Lead';
   };
 
+  const userName = user?.name || 'User';
+  const userEmail = user?.email || 'user@example.com';
+  const roleDisplay = getRoleDisplay();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -58,10 +62,10 @@ export default function ProfileScreen() {
               color="#ffffff"
             />
           </View>
-          <Text style={styles.name}>{user?.name || 'User'}</Text>
-          <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.email}>{userEmail}</Text>
           <View style={[styles.roleBadge, { backgroundColor: `${getRoleColor()}20` }]}>
-            <Text style={[styles.roleText, { color: getRoleColor() }]}>{getRoleDisplay()}</Text>
+            <Text style={[styles.roleText, { color: getRoleColor() }]}>{roleDisplay}</Text>
           </View>
         </View>
 
