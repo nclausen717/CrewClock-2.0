@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or, isNull } from 'drizzle-orm';
 import { employees } from '../db/schema.js';
 import { account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
@@ -72,7 +72,12 @@ export function registerEmployeeRoutes(app: App) {
             createdAt: employees.createdAt,
           })
           .from(employees)
-          .where(eq(employees.createdBy, session.user.id));
+          .where(
+            or(
+              eq(employees.createdBy, session.user.id),
+              isNull(employees.createdBy)
+            )
+          );
 
         app.logger.info({ userId: session.user.id, count: allEmployees.length }, 'Employees fetched');
 
@@ -282,8 +287,12 @@ export function registerEmployeeRoutes(app: App) {
 
         const existingEmployee = existingEmployees[0];
 
-        // Check if the current admin created this employee
-        if (existingEmployee.createdBy !== session.user.id) {
+        // Check authorization: admin can update if they created the employee,
+        // or if it's a self-registered crew leader (createdBy is null)
+        const isAdminOwner = existingEmployee.createdBy === session.user.id;
+        const isSelfRegistered = existingEmployee.createdBy === null;
+
+        if (!isAdminOwner && !isSelfRegistered) {
           app.logger.warn({ userId: session.user.id, employeeId: id }, 'Unauthorized employee update');
           return reply.status(403).send({ error: 'Forbidden' });
         }
@@ -415,8 +424,12 @@ export function registerEmployeeRoutes(app: App) {
 
         const existingEmployee = existingEmployees[0];
 
-        // Check if the current admin created this employee
-        if (existingEmployee.createdBy !== session.user.id) {
+        // Check authorization: admin can delete if they created the employee,
+        // or if it's a self-registered crew leader (createdBy is null)
+        const isAdminOwner = existingEmployee.createdBy === session.user.id;
+        const isSelfRegistered = existingEmployee.createdBy === null;
+
+        if (!isAdminOwner && !isSelfRegistered) {
           app.logger.warn({ userId: session.user.id, employeeId: id }, 'Unauthorized employee deletion');
           return reply.status(403).send({ error: 'Forbidden' });
         }
