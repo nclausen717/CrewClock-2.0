@@ -53,6 +53,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const onWelcomeScreen = segments.length === 0;
     const onLoginScreen = segments[0] === 'login';
 
+    console.log('[Auth] Navigation check:', { 
+      user: user?.email, 
+      inAuthGroup, 
+      onWelcomeScreen, 
+      onLoginScreen,
+      segments 
+    });
+
     if (!user && inAuthGroup) {
       // User is not authenticated but trying to access protected routes
       console.log('[Auth] User logged out, redirecting to welcome screen');
@@ -146,8 +154,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Always clear local state, even if server call fails
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
+      
+      // Clear user state FIRST before navigation
       setUser(null);
-      console.log('[Auth] Local logout complete - useEffect will handle navigation');
+      
+      // Reset loading state to ensure navigation logic runs
+      setIsLoading(false);
+      
+      console.log('[Auth] Local logout complete - user state cleared');
     }
   }, []);
 

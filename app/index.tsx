@@ -10,15 +10,17 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
 
   // Auth Bootstrap: Check session and redirect if authenticated
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    console.log('[Welcome] Auth state:', { isLoading, isAuthenticated, hasUser: !!user });
+    
+    if (!isLoading && isAuthenticated && user) {
       console.log('[Welcome] User is authenticated, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
   // Show loading while checking session
   if (isLoading) {
@@ -27,6 +29,17 @@ export default function WelcomeScreen() {
         <View style={[styles.content, { justifyContent: 'center' }]}>
           <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
           <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Don't render welcome screen if user is authenticated (prevents flash of content)
+  if (isAuthenticated && user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.content, { justifyContent: 'center' }]}>
+          <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
         </View>
       </SafeAreaView>
     );
