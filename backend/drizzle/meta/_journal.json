@@ -8,6 +8,13 @@
       "when": 1770947554450,
       "tag": "20260213015234_whole_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770949621360,
+      "tag": "20260213022701_naive_ego",
+      "breakpoints": true
     }
   ]
 }
