@@ -32,6 +32,9 @@ export default function WelcomeScreen() {
     );
   }
 
+  const crewText = 'Crew';
+  const clockText = 'Clock';
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -40,9 +43,12 @@ export default function WelcomeScreen() {
             ios_icon_name="clock.fill"
             android_material_icon_name="schedule"
             size={80}
-            color={colors.crewLeadPrimary}
+            color={colors.clockPrimary}
           />
-          <Text style={styles.title}>CrewClock</Text>
+          <View style={styles.logoContainer}>
+            <Text style={styles.crewText}>{crewText}</Text>
+            <Text style={styles.clockText}>{clockText}</Text>
+          </View>
           <Text style={styles.subtitle}>Time Tracking Made Simple</Text>
         </View>
 
@@ -105,7 +111,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.clockBackground,
     paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   content: {
@@ -118,16 +124,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 60,
   },
-  title: {
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  crewText: {
     fontSize: 42,
     fontWeight: 'bold',
-    color: colors.text,
-    marginTop: 20,
+    color: colors.crewLeadPrimary,
+  },
+  clockText: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: colors.clockPrimary,
   },
   subtitle: {
     fontSize: 18,
-    color: colors.textSecondary,
+    color: '#ffffff',
     marginTop: 8,
+    opacity: 0.9,
   },
   buttonContainer: {
     width: '100%',
@@ -171,7 +187,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#ffffff',
     marginTop: 32,
+    opacity: 0.8,
   },
 });
