@@ -168,9 +168,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state - this will trigger navigation effect
+      // Clear user state and ensure loading is false
       setUser(null);
-      console.log('[Auth] User state cleared');
+      setIsLoading(false);
+      console.log('[Auth] User state cleared and loading set to false');
       
       // Navigate to welcome screen
       console.log('[Auth] Navigating to welcome screen');
@@ -183,13 +184,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Even on error, clear local state
       await removeToken();
       setUser(null);
+      setIsLoading(false);
       router.replace('/');
     } finally {
       // Reset logout flag after navigation completes
       setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 500);
+      }, 100);
     }
   }, [router]);
 
