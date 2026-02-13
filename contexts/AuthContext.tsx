@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Protected route navigation
   useEffect(() => {
-    // Skip navigation during logout to prevent conflicts
+    // Skip navigation during logout or loading to prevent conflicts
     if (isLoading || isLoggingOutRef.current) {
       console.log('[Auth] Skipping navigation check (loading or logging out)');
       return;
@@ -67,17 +67,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       segments
     });
 
+    // Clear any pending navigation timeouts
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
+    }
+
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
-      // OR user is not on welcome/login screen
       console.log('[Auth] User not authenticated, redirecting to welcome screen');
-      router.replace('/');
+      navigationTimeoutRef.current = setTimeout(() => {
+        router.replace('/');
+      }, 50);
     } else if (user && onWelcomeScreen) {
       // User is authenticated and on welcome screen, redirect to home
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
-      router.replace('/(tabs)/(home)/');
+      navigationTimeoutRef.current = setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 50);
     }
-  }, [user, segments, isLoading, router]);
+  }, [user, segments, isLoading]);
 
   const checkSession = async () => {
     console.log('[Auth] Checking session...');
@@ -180,9 +189,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('[Auth] Local logout complete - user state cleared');
       
-      // Navigate to welcome screen immediately
+      // Navigate to welcome screen with a small delay to ensure state updates propagate
       console.log('[Auth] Navigating to welcome screen');
-      router.replace('/');
+      setTimeout(() => {
+        router.replace('/');
+      }, 100);
       
       console.log('[Auth] Logout process complete');
       
@@ -191,13 +202,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Even on error, clear local state
       await removeToken();
       setUser(null);
-      router.replace('/');
+      setTimeout(() => {
+        router.replace('/');
+      }, 100);
     } finally {
-      // Reset logout flag after a short delay to allow navigation to complete
-      navigationTimeoutRef.current = setTimeout(() => {
+      // Reset logout flag after navigation completes
+      setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 300);
+      }, 500);
     }
   }, [router]);
 

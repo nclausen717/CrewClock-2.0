@@ -19,12 +19,18 @@ export default function WelcomeScreen() {
     // Only redirect if we're done loading AND user is authenticated
     if (!isLoading && isAuthenticated && user) {
       console.log('[Welcome] User is authenticated, redirecting to home');
-      router.replace('/(tabs)/(home)/');
+      const timeoutId = setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    } else if (!isLoading) {
+      console.log('[Welcome] Rendering welcome screen for unauthenticated user');
     }
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isLoading, isAuthenticated, user]);
 
   // Show loading ONLY during initial session check
   if (isLoading) {
+    console.log('[Welcome] Showing loading state');
     return (
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { justifyContent: 'center' }]}>
@@ -35,8 +41,8 @@ export default function WelcomeScreen() {
     );
   }
 
-  // Always render the welcome screen when not loading
-  // The useEffect will handle navigation if user is authenticated
+  // Always render the welcome screen when not loading and not authenticated
+  console.log('[Welcome] Rendering welcome screen content');
   const crewText = 'Crew';
   const clockText = 'Clock';
 
