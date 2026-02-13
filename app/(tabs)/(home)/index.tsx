@@ -1,13 +1,12 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
 import { Modal } from '@/components/ui/Modal';
 
 export default function HomeScreen() {
@@ -79,26 +78,83 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
+          {user?.role === 'crew_lead' && (
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => router.push('/clock-in')}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
+                <IconSymbol
+                  ios_icon_name="clock.fill"
+                  android_material_icon_name="access-time"
+                  size={28}
+                  color={colors.crewLeadPrimary}
+                />
+              </View>
+              <View style={styles.actionContent}>
+                <Text style={styles.actionTitle}>Clock In Team</Text>
+                <Text style={styles.actionDescription}>Clock in employees at job site</Text>
+              </View>
               <IconSymbol
-                ios_icon_name="clock.fill"
-                android_material_icon_name="access-time"
-                size={28}
-                color={colors.crewLeadPrimary}
+                ios_icon_name="chevron.right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color="#b0c4de"
               />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Time Tracking</Text>
-              <Text style={styles.actionDescription}>Track work hours</Text>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color="#b0c4de"
-            />
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )}
+
+          {user?.role === 'admin' && (
+            <>
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => router.push('/employees')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
+                  <IconSymbol
+                    ios_icon_name="person.2.fill"
+                    android_material_icon_name="group"
+                    size={28}
+                    color={colors.crewLeadPrimary}
+                  />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Manage Employees</Text>
+                  <Text style={styles.actionDescription}>Add and manage team members</Text>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => router.push('/job-sites')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: `${colors.adminPrimary}20` }]}>
+                  <IconSymbol
+                    ios_icon_name="map.fill"
+                    android_material_icon_name="location-on"
+                    size={28}
+                    color={colors.adminPrimary}
+                  />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Job Sites</Text>
+                  <Text style={styles.actionDescription}>Manage work locations</Text>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
+            </>
+          )}
 
           <TouchableOpacity style={styles.actionCard}>
             <View style={[styles.actionIconContainer, { backgroundColor: `${colors.adminPrimary}20` }]}>
@@ -112,27 +168,6 @@ export default function HomeScreen() {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Reports</Text>
               <Text style={styles.actionDescription}>View and generate reports</Text>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color="#b0c4de"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
-              <IconSymbol
-                ios_icon_name="person.2.fill"
-                android_material_icon_name="group"
-                size={28}
-                color={colors.crewLeadPrimary}
-              />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Team</Text>
-              <Text style={styles.actionDescription}>Manage team members</Text>
             </View>
             <IconSymbol
               ios_icon_name="chevron.right"

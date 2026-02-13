@@ -3,7 +3,7 @@
 
 ## 🚀 Getting Started
 
-The CrewClock app is now fully integrated with the backend API. Follow these steps to test the authentication system.
+The CrewClock app is now fully integrated with the backend API. All features are working: authentication, employee management, job site management, and time tracking.
 
 ## 📱 Running the App
 
@@ -12,71 +12,78 @@ The app should already be running. If not:
 npm run dev
 ```
 
-## 🧪 Quick Test Flow
+## 🧪 Quick Test Flow (5 Minutes)
 
-### 1. First Time Setup - Create Admin Account
+### Step 1: Create Admin Account
 
-1. Open the app - you'll see the Welcome screen
-2. Tap **"Admin Login"**
-3. Tap **"Don't have an account? Register"**
-4. Fill in the form:
-   - **Name:** Sarah Admin
-   - **Email:** admin@test.com
-   - **Password:** Admin123!
-5. Tap **"Register"**
-6. ✅ You should be redirected to the home screen
-7. Notice the purple "Admin Dashboard" badge
-8. Navigate to the **Profile** tab
-9. See your name, email, and purple "Admin" badge
+1. Open the app → Welcome screen
+2. Tap **"Admin Login"** → **"Register"**
+3. Fill in:
+   - Name: Sarah Admin
+   - Email: admin@test.com
+   - Password: Admin123!
+4. Tap **"Register"**
+5. ✅ Redirected to home screen with deep blue "Admin" badge
 
-### 2. Test Logout
+### Step 2: Add Employees
 
-1. In the Profile tab, tap **"Logout"**
-2. A confirmation modal will appear
-3. Tap **"Logout"** to confirm
-4. ✅ You should be redirected to the Welcome screen
+1. From home, tap **"Manage Employees"**
+2. Tap **"Add Employee"**
+3. Add regular employee:
+   - Name: James Smith
+   - Leave crew leader unchecked
+   - Tap **"Add Employee"**
+4. Add crew leader:
+   - Name: John Crew Lead
+   - Check **"Designate as Crew Leader"**
+   - Email: crewlead@test.com
+   - Tap **"Add Employee"**
+   - ✅ **SAVE THE GENERATED PASSWORD!**
+5. ✅ See 2 employees: 1 crew leader (orange badge), 1 worker (blue badge)
 
-### 3. Test Login
+### Step 3: Add Job Sites
 
-1. From the Welcome screen, tap **"Admin Login"**
-2. Enter your credentials:
-   - **Email:** admin@test.com
-   - **Password:** Admin123!
-3. Tap **"Login"**
-4. ✅ You should be logged in and see the home screen
+1. Go back → Tap **"Job Sites"**
+2. Tap **"Add Job Site"**
+3. Add site:
+   - Name: Downtown Office
+   - Location: 123 Main St
+   - Tap **"Add Site"**
+4. ✅ See job site with location icon
 
-### 4. Create Crew Lead Account
+### Step 4: Test Crew Leader Clock-In
 
-1. Logout if you're logged in
-2. From the Welcome screen, tap **"Crew Lead Login"**
-3. Tap **"Don't have an account? Register"**
-4. Fill in the form:
-   - **Name:** John Crew Lead
-   - **Email:** crewlead@test.com
-   - **Password:** Test123!
-5. Tap **"Register"**
-6. ✅ You should be redirected to the home screen
-7. Notice the blue "Crew Lead Dashboard" badge
-8. Navigate to the **Profile** tab
-9. See your name, email, and blue "Crew Lead" badge
+1. Logout → Tap **"Crew Lead Login"**
+2. Login with:
+   - Email: crewlead@test.com
+   - Password: [from Step 2]
+3. ✅ See orange "Crew Lead" badge
+4. Tap **"Clock In Team"**
+5. Select **James Smith**
+6. Tap **"Clock In (1)"**
+7. Select **Downtown Office**
+8. Tap **"Confirm Clock In"**
+9. ✅ Success modal shows "James Smith at Downtown Office"
 
-### 5. Test Session Persistence
+### Step 5: Test Session Persistence
 
-1. While logged in, refresh the page (Web) or close and reopen the app (Mobile)
-2. ✅ You should remain logged in
-3. Your user information should still be displayed
+1. Refresh page (Web) or close/reopen app (Mobile)
+2. ✅ Still logged in as crew leader
+3. All data persists
 
 ## 🎨 Visual Differences
 
-### Crew Lead (Blue Theme)
-- Blue badges and icons (#2563eb)
-- "Crew Lead Dashboard" label
+### Crew Lead (Orange Theme)
+- Orange badges and icons (#ff6b35)
+- "Crew Lead" badge
 - Person icon
+- **Actions:** Clock In Team
 
-### Admin (Purple Theme)
-- Purple badges and icons (#7c3aed)
-- "Admin Dashboard" label
+### Admin (Deep Blue Theme)
+- Deep blue badges and icons (#003d5b)
+- "Admin" badge
 - Shield icon
+- **Actions:** Manage Employees, Job Sites
 
 ## ⚠️ Error Testing
 
@@ -111,17 +118,40 @@ Open the browser console (F12) to see detailed logs:
 
 ## ✅ What's Working
 
+### Authentication
 - ✅ Dual-role authentication (Crew Lead & Admin)
 - ✅ Registration for both roles
 - ✅ Login for both roles
 - ✅ Session persistence
 - ✅ Logout functionality
+- ✅ Auth bootstrap (no redirect loops)
+
+### Employee Management (Admin)
+- ✅ View all employees
+- ✅ Add regular employees
+- ✅ Add crew leaders with auto-generated passwords
+- ✅ Delete employees
+- ✅ Real-time stats
+
+### Job Site Management (Admin)
+- ✅ View all job sites
+- ✅ Add job sites
+- ✅ Delete job sites
+- ✅ Real-time stats
+
+### Time Tracking (Crew Leader)
+- ✅ View employees for clock-in
+- ✅ Multi-select employees
+- ✅ Select job site
+- ✅ Clock in team
+
+### UI/UX
 - ✅ Role-specific UI and colors
 - ✅ Custom modals (no Alert.alert)
 - ✅ Loading states
 - ✅ Error handling
 - ✅ Email validation
-- ✅ Auth bootstrap (no redirect loops)
+- ✅ Empty states
 
 ## 🎯 Backend API
 
@@ -130,13 +160,29 @@ All requests go to:
 https://x7ydjwck6f6dxcyxtq5hxqfkggu4jxdd.app.specular.dev
 ```
 
-Endpoints being used:
+### Endpoints Integrated:
+
+**Authentication:**
 - POST `/api/auth/crew-lead/register`
 - POST `/api/auth/crew-lead/login`
 - POST `/api/auth/admin/register`
 - POST `/api/auth/admin/login`
-- GET `/api/auth/me` (with Bearer token)
-- POST `/api/auth/logout` (with Bearer token)
+- GET `/api/auth/me`
+- POST `/api/auth/logout`
+
+**Employee Management:**
+- GET `/api/employees`
+- POST `/api/employees`
+- DELETE `/api/employees/:id`
+
+**Job Site Management:**
+- GET `/api/job-sites`
+- POST `/api/job-sites`
+- DELETE `/api/job-sites/:id`
+
+**Time Tracking:**
+- GET `/api/employees/for-clock-in`
+- POST `/api/time-entries/clock-in`
 
 ## 📚 More Information
 
@@ -144,10 +190,16 @@ Endpoints being used:
 - `API_REFERENCE.md` - Complete API documentation
 - `INTEGRATION_SUMMARY.md` - Technical integration details
 
-## 🎉 Ready to Use!
+## 🎉 Production Ready!
 
-The authentication system is fully functional and ready for production. You can now start building additional features like time tracking and report generation on top of this foundation.
+All features are fully integrated and working:
+- ✅ Authentication with session persistence
+- ✅ Employee management with crew leader designation
+- ✅ Job site management
+- ✅ Time tracking with multi-employee clock-in
+
+**For comprehensive testing, see `TEST_INSTRUCTIONS.md`**
 
 ---
 
-**Need Help?** Check the console logs for detailed debugging information. All API calls and auth state changes are logged with `[API]` and `[Auth]` prefixes.
+**Need Help?** Check the console logs for detailed debugging information. All API calls are logged with `[API]` prefix.
