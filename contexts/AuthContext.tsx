@@ -37,7 +37,6 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const segments = useSegments();
 
@@ -59,8 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       inAuthGroup, 
       onWelcomeScreen, 
       onLoginScreen,
-      segments,
-      isLoggingOut
+      segments
     });
 
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
@@ -68,12 +66,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // OR user is not on welcome/login screen
       console.log('[Auth] User not authenticated, redirecting to welcome screen');
       router.replace('/');
-    } else if (user && onWelcomeScreen && !isLoggingOut) {
+    } else if (user && onWelcomeScreen) {
       // User is authenticated and on welcome screen, redirect to home
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [user, segments, isLoading, isLoggingOut, router]);
+  }, [user, segments, isLoading, router]);
 
   const checkSession = async () => {
     console.log('[Auth] Checking session...');
@@ -144,7 +142,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = useCallback(async () => {
     console.log('[Auth] Logout initiated...');
-    setIsLoggingOut(true);
     
     try {
       // Try to notify server first (with auth token)
@@ -159,26 +156,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
       
-      // Clear user state FIRST
+      // Clear user state
       setUser(null);
       
       console.log('[Auth] Local logout complete - user state cleared');
+      console.log('[Auth] Navigating to welcome screen');
+      
+      // Navigate immediately after clearing state
+      router.replace('/');
       
     } catch (error) {
       console.error('[Auth] Logout error:', error);
       // Even on error, clear local state
       await removeToken();
       setUser(null);
-    } finally {
-      // Reset isLoggingOut AFTER clearing user state
-      setIsLoggingOut(false);
-      
-      // Force navigation to welcome screen after state is cleared
-      // Use setTimeout to ensure this happens after React finishes updating
-      setTimeout(() => {
-        console.log('[Auth] Force navigating to welcome screen');
-        router.replace('/');
-      }, 50);
+      router.replace('/');
     }
   }, [router]);
 
