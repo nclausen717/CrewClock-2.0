@@ -40,7 +40,7 @@ export default function ProfileScreen() {
               ios_icon_name="person.circle.fill"
               android_material_icon_name="account-circle"
               size={24}
-              color={colors.textSecondary}
+              color="#b0c4de"
               style={styles.menuIcon}
             />
             <Text style={styles.menuText}>Edit Profile</Text>
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
               size={20}
-              color={colors.textSecondary}
+              color="#b0c4de"
             />
           </TouchableOpacity>
 
@@ -57,7 +57,7 @@ export default function ProfileScreen() {
               ios_icon_name="lock.fill"
               android_material_icon_name="lock"
               size={24}
-              color={colors.textSecondary}
+              color="#b0c4de"
               style={styles.menuIcon}
             />
             <Text style={styles.menuText}>Change Password</Text>
@@ -65,7 +65,7 @@ export default function ProfileScreen() {
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
               size={20}
-              color={colors.textSecondary}
+              color="#b0c4de"
             />
           </TouchableOpacity>
         </View>
@@ -78,7 +78,7 @@ export default function ProfileScreen() {
               ios_icon_name="bell.fill"
               android_material_icon_name="notifications"
               size={24}
-              color={colors.textSecondary}
+              color="#b0c4de"
               style={styles.menuIcon}
             />
             <Text style={styles.menuText}>Notifications</Text>
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
               size={20}
-              color={colors.textSecondary}
+              color="#b0c4de"
             />
           </TouchableOpacity>
 
@@ -95,7 +95,7 @@ export default function ProfileScreen() {
               ios_icon_name="info.circle.fill"
               android_material_icon_name="info"
               size={24}
-              color={colors.textSecondary}
+              color="#b0c4de"
               style={styles.menuIcon}
             />
             <Text style={styles.menuText}>About</Text>
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
               size={20}
-              color={colors.textSecondary}
+              color="#b0c4de"
             />
           </TouchableOpacity>
         </View>
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.clockBackground,
   },
   scrollContent: {
     padding: 20,
@@ -148,12 +148,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#ffffff',
     marginBottom: 4,
   },
   role: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: '#b0c4de',
   },
   section: {
     marginBottom: 24,
@@ -161,12 +161,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#ffffff',
     marginBottom: 12,
     paddingHorizontal: 4,
   },
   menuItem: {
-    backgroundColor: colors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -184,10 +186,10 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
+    color: '#ffffff',
   },
   logoutButton: {
-    backgroundColor: colors.card,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',

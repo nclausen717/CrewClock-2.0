@@ -120,6 +120,7 @@ export default function CrewLeadLoginScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your name"
+                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
@@ -132,6 +133,7 @@ export default function CrewLeadLoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your email"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -145,6 +147,7 @@ export default function CrewLeadLoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your password"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -192,7 +195,7 @@ export default function CrewLeadLoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.clockBackground,
     paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   keyboardView: {
@@ -210,12 +213,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#ffffff',
     marginTop: 16,
   },
   modeTitle: {
     fontSize: 20,
-    color: colors.textSecondary,
+    color: '#b0c4de',
     marginTop: 8,
   },
   form: {
@@ -229,18 +232,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#ffffff',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: colors.text,
+    color: '#ffffff',
   },
   submitButton: {
     marginTop: 12,
