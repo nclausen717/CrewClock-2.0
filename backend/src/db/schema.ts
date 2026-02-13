@@ -6,7 +6,7 @@ export const employees = pgTable('employees', {
   name: text('name').notNull(),
   email: text('email').unique(), // nullable - only for crew leaders who can login
   isCrewLeader: boolean('is_crew_leader').default(false).notNull(),
-  createdBy: text('created_by').notNull(), // admin user id who created this employee
+  createdBy: text('created_by'), // admin user id who created this employee, null if self-registered crew leader
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()

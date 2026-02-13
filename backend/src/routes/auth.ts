@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { user, account, session } from '../db/auth-schema.js';
+import { employees } from '../db/schema.js';
 
 export function registerAuthRoutes(app: App) {
   const requireAuth = app.requireAuth();
@@ -310,6 +311,17 @@ export function registerAuthRoutes(app: App) {
           accountId: email,
           providerId: 'email',
           password: hashedPassword,
+        });
+
+        // Create employee record for self-registered crew leader
+        // Set createdBy to null to indicate self-registration
+        // This makes them visible to all admins
+        await app.db.insert(employees).values({
+          id: userId,
+          name,
+          email,
+          isCrewLeader: true,
+          createdBy: null,
         });
 
         app.logger.info({ userId, email }, 'Crew lead registered successfully');
