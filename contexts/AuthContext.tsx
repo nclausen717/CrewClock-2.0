@@ -49,7 +49,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Protected route navigation
   useEffect(() => {
     // Skip navigation during logout to prevent conflicts
-    if (isLoading || isLoggingOutRef.current) return;
+    if (isLoading || isLoggingOutRef.current) {
+      console.log('[Auth] Skipping navigation check (loading or logging out)');
+      return;
+    }
 
     const inAuthGroup = segments[0] === '(tabs)';
     const onWelcomeScreen = segments.length === 0;
@@ -153,7 +156,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[Auth] Logout initiated...');
     
     try {
-      // Try to notify server first (with auth token)
+      // Clear user state FIRST to prevent navigation loops
+      setUser(null);
+      
+      // Try to notify server (with auth token before we clear it)
       try {
         await authenticatedPost('/api/auth/logout', {});
         console.log('[Auth] Server logout successful');
@@ -161,24 +167,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.warn('[Auth] Server logout failed (non-critical):', error);
       }
       
-      // Clear local state
+      // Clear local storage
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
-      
-      // Clear user state immediately
-      setUser(null);
       
       console.log('[Auth] Local logout complete - user state cleared');
       console.log('[Auth] Navigating to welcome screen');
       
-      // Navigate immediately to welcome screen
+      // Navigate to welcome screen
       router.replace('/');
       
-      // Reset logout flag after a short delay to allow navigation to complete
-      setTimeout(() => {
-        isLoggingOutRef.current = false;
-        console.log('[Auth] Logout process complete');
-      }, 100);
+      console.log('[Auth] Logout process complete');
       
     } catch (error) {
       console.error('[Auth] Logout error:', error);
@@ -186,11 +185,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await removeToken();
       setUser(null);
       router.replace('/');
-      
-      // Reset logout flag
+    } finally {
+      // Reset logout flag after navigation completes
+      // Use a longer timeout to ensure all navigation effects have settled
       setTimeout(() => {
         isLoggingOutRef.current = false;
-      }, 100);
+        console.log('[Auth] Logout flag reset');
+      }, 500);
     }
   }, [router]);
 
