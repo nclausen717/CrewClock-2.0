@@ -40,7 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
   const isLoggingOutRef = useRef(false);
-  const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check session on mount
   useEffect(() => {
@@ -67,24 +66,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       segments
     });
 
-    // Clear any pending navigation timeouts
-    if (navigationTimeoutRef.current) {
-      clearTimeout(navigationTimeoutRef.current);
-      navigationTimeoutRef.current = null;
-    }
-
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
       console.log('[Auth] User not authenticated, redirecting to welcome screen');
-      navigationTimeoutRef.current = setTimeout(() => {
-        router.replace('/');
-      }, 50);
+      router.replace('/');
     } else if (user && onWelcomeScreen) {
       // User is authenticated and on welcome screen, redirect to home
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
-      navigationTimeoutRef.current = setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 50);
+      router.replace('/(tabs)/(home)/');
     }
   }, [user, segments, isLoading]);
 
@@ -165,13 +154,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoggingOutRef.current = true;
     console.log('[Auth] Logout initiated...');
     
-    // Clear any pending navigation timeouts
-    if (navigationTimeoutRef.current) {
-      clearTimeout(navigationTimeoutRef.current);
-      navigationTimeoutRef.current = null;
-    }
-    
     try {
+      // Clear user state FIRST to immediately update UI
+      setUser(null);
+      console.log('[Auth] User state cleared');
+      
       // Try to notify server (with auth token before we clear it)
       try {
         await authenticatedPost('/api/auth/logout', {});
@@ -184,44 +171,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
       
-      // Clear user state AFTER token is removed to ensure consistency
-      setUser(null);
+      console.log('[Auth] Local logout complete');
       
-      console.log('[Auth] Local logout complete - user state cleared');
-      
-      // Navigate to welcome screen with a small delay to ensure state updates propagate
+      // Navigate to welcome screen immediately - no delay needed since state is already cleared
       console.log('[Auth] Navigating to welcome screen');
-      setTimeout(() => {
-        router.replace('/');
-      }, 100);
+      router.replace('/');
       
       console.log('[Auth] Logout process complete');
       
     } catch (error) {
       console.error('[Auth] Logout error:', error);
       // Even on error, clear local state
-      await removeToken();
       setUser(null);
-      setTimeout(() => {
-        router.replace('/');
-      }, 100);
+      await removeToken();
+      router.replace('/');
     } finally {
-      // Reset logout flag after navigation completes
+      // Reset logout flag after a short delay
       setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 500);
+      }, 300);
     }
   }, [router]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (navigationTimeoutRef.current) {
-        clearTimeout(navigationTimeoutRef.current);
-      }
-    };
-  }, []);
+
 
   const value: AuthContextType = {
     user,
