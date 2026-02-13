@@ -54,9 +54,13 @@ export const apiCall = async <T = any>(
   console.log(`[API] ${method} ${url}`);
 
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...headers,
   };
+
+  // Only set Content-Type if we have a body to send
+  if (body && method !== 'GET') {
+    requestHeaders['Content-Type'] = 'application/json';
+  }
 
   // Add auth token if required
   if (requiresAuth) {
@@ -81,7 +85,7 @@ export const apiCall = async <T = any>(
 
     if (!response.ok) {
       console.error(`[API] Error ${response.status}:`, data);
-      throw new Error(data.error || `Request failed with status ${response.status}`);
+      throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
     }
 
     console.log(`[API] Success:`, data);

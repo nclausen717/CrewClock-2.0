@@ -58,26 +58,27 @@ export default function EmployeesScreen() {
   };
 
   const fetchEmployees = async () => {
-    console.log('Fetching employees...');
+    console.log('[API] Fetching employees list');
     setLoading(true);
     
     try {
       const response = await authenticatedGet<{ employees: Employee[] }>('/api/employees');
-      console.log('Employees fetched:', response.employees.length);
+      console.log('[API] Employees fetched:', response.employees.length);
       setEmployees(response.employees);
     } catch (error: any) {
-      console.error('Failed to fetch employees:', error);
-      showModal('Error', error.message || 'Failed to load employees', 'error');
+      console.error('[API] Failed to fetch employees:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to load employees. Please try again.';
+      showModal('Error', errorMessage, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddEmployee = async () => {
-    console.log('User tapped Add Employee button', { name, email, isCrewLeader });
+    console.log('[API] User tapped Add Employee button', { name, email, isCrewLeader });
     
     if (!name.trim()) {
-      showModal('Missing Information', 'Please enter employee name', 'error');
+      showModal('Missing Information', 'Please enter employee name', 'warning');
       return;
     }
 
@@ -85,7 +86,7 @@ export default function EmployeesScreen() {
     if (email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        showModal('Invalid Email', 'Please enter a valid email address', 'error');
+        showModal('Invalid Email', 'Please enter a valid email address', 'warning');
         return;
       }
     }
@@ -102,7 +103,7 @@ export default function EmployeesScreen() {
         isCrewLeader,
       });
 
-      console.log('Employee added successfully:', response.employee);
+      console.log('[API] Employee added successfully:', response.employee);
       
       // Show success message with generated password if crew leader
       if (response.generatedPassword) {
@@ -123,12 +124,12 @@ export default function EmployeesScreen() {
       // Refresh list
       fetchEmployees();
     } catch (error: any) {
-      console.error('Failed to add employee:', error);
+      console.error('[API] Failed to add employee:', error);
       
       // Parse error message for better user feedback
       let errorMessage = 'Failed to add employee. Please try again.';
       
-      if (error.message) {
+      if (error?.message) {
         if (error.message.includes('duplicate') || error.message.includes('already exists')) {
           errorMessage = 'An employee with this email already exists.';
         } else if (error.message.includes('email')) {
@@ -136,6 +137,8 @@ export default function EmployeesScreen() {
         } else {
           errorMessage = error.message;
         }
+      } else if (error?.toString) {
+        errorMessage = error.toString();
       }
       
       showModal('Error', errorMessage, 'error');
@@ -145,24 +148,25 @@ export default function EmployeesScreen() {
   };
 
   const handleDeleteEmployee = (employeeId: string, employeeName: string) => {
-    console.log('User tapped delete for employee:', employeeName);
+    console.log('[API] User tapped delete for employee:', employeeName);
     
     showModal(
       'Confirm Delete',
       `Are you sure you want to delete "${employeeName}"? This action cannot be undone.`,
       'warning',
       async () => {
-        console.log('User confirmed delete for employee:', employeeName);
+        console.log('[API] User confirmed delete for employee:', employeeName);
         setModalVisible(false);
         
         try {
           await authenticatedDelete(`/api/employees/${employeeId}`);
-          console.log('Employee deleted successfully');
+          console.log('[API] Employee deleted successfully');
           showModal('Success', `Employee "${employeeName}" has been deleted.`, 'success');
           fetchEmployees();
         } catch (error: any) {
-          console.error('Failed to delete employee:', error);
-          showModal('Error', error.message || 'Failed to delete employee', 'error');
+          console.error('[API] Failed to delete employee:', error);
+          const errorMessage = error?.message || error?.toString() || 'Failed to delete employee. Please try again.';
+          showModal('Error', errorMessage, 'error');
         }
       },
       'Delete'
