@@ -16,9 +16,14 @@ export default function WelcomeScreen() {
   useEffect(() => {
     console.log('[Welcome] Auth state:', { isLoading, isAuthenticated, hasUser: !!user });
     
+    // Only redirect if we're done loading AND user is authenticated
     if (!isLoading && isAuthenticated && user) {
       console.log('[Welcome] User is authenticated, redirecting to home');
-      router.replace('/(tabs)/(home)/');
+      // Use a small delay to ensure clean navigation
+      const timer = setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [isLoading, isAuthenticated, user, router]);
 
@@ -34,12 +39,13 @@ export default function WelcomeScreen() {
     );
   }
 
-  // Don't render welcome screen if user is authenticated (prevents flash of content)
+  // Show loading spinner while redirecting authenticated user
   if (isAuthenticated && user) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { justifyContent: 'center' }]}>
           <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
+          <Text style={[styles.subtitle, { marginTop: 16 }]}>Redirecting...</Text>
         </View>
       </SafeAreaView>
     );

@@ -37,6 +37,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const segments = useSegments();
 
@@ -47,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Protected route navigation
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || isLoggingOut) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
     const onWelcomeScreen = segments.length === 0;
@@ -58,7 +59,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       inAuthGroup, 
       onWelcomeScreen, 
       onLoginScreen,
-      segments 
+      segments,
+      isLoggingOut
     });
 
     if (!user && inAuthGroup) {
@@ -70,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [user, segments, isLoading, router]);
+  }, [user, segments, isLoading, isLoggingOut, router]);
 
   const checkSession = async () => {
     console.log('[Auth] Checking session...');
@@ -141,6 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = useCallback(async () => {
     console.log('[Auth] Logout initiated...');
+    setIsLoggingOut(true);
     
     try {
       // Try to notify server first (with auth token)
@@ -150,19 +153,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.warn('[Auth] Server logout failed (non-critical):', error);
       }
-    } finally {
-      // Always clear local state, even if server call fails
+      
+      // Clear local state
       console.log('[Auth] Clearing local auth state...');
       await removeToken();
       
-      // Clear user state FIRST
+      // Clear user state
       setUser(null);
       
       console.log('[Auth] Local logout complete - user state cleared');
       
+      // Small delay to ensure state is updated before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Explicitly navigate to welcome screen
       console.log('[Auth] Navigating to welcome screen');
       router.replace('/');
+      
+    } catch (error) {
+      console.error('[Auth] Logout error:', error);
+      // Even on error, clear local state
+      await removeToken();
+      setUser(null);
+      router.replace('/');
+    } finally {
+      setIsLoggingOut(false);
     }
   }, [router]);
 

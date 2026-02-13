@@ -51,7 +51,7 @@ export default function HomeScreen() {
         }}
       />
       
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} style={styles.container}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
