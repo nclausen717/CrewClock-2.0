@@ -2,6 +2,9 @@ import { createApplication } from "@specific-dev/framework";
 import * as appSchema from './db/schema.js';
 import * as authSchema from './db/auth-schema.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerEmployeeRoutes } from './routes/employees.js';
+import { registerJobSitesRoutes } from './routes/job-sites.js';
+import { registerTimeEntriesRoutes } from './routes/time-entries.js';
 
 // Combine both schemas for full database type support
 const schema = { ...appSchema, ...authSchema };
@@ -17,6 +20,9 @@ app.withAuth();
 
 // Register route modules
 registerAuthRoutes(app);
+registerEmployeeRoutes(app);
+registerJobSitesRoutes(app);
+registerTimeEntriesRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
