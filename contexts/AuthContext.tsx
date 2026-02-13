@@ -50,17 +50,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
+    const onWelcomeScreen = segments.length === 0;
+    const onLoginScreen = segments[0] === 'login';
 
     if (!user && inAuthGroup) {
       // User is not authenticated but trying to access protected routes
-      console.log('[Auth] Redirecting to welcome screen - user not authenticated');
+      console.log('[Auth] User logged out, redirecting to welcome screen');
       router.replace('/');
-    } else if (user && !inAuthGroup && segments[0] !== 'login') {
-      // User is authenticated but on welcome screen
-      console.log('[Auth] Redirecting to home - user is authenticated');
+    } else if (user && onWelcomeScreen) {
+      // User is authenticated and on welcome screen, redirect to home
+      console.log('[Auth] User authenticated on welcome screen, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [user, segments, isLoading]);
+  }, [user, segments, isLoading, router]);
 
   const checkSession = async () => {
     console.log('[Auth] Checking session...');
@@ -143,14 +145,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // Always clear local state, even if server call fails
       console.log('[Auth] Clearing local auth state...');
-      setUser(null);
       await removeToken();
-      console.log('[Auth] Local logout complete, navigating to welcome screen');
-      
-      // Navigate to welcome screen
-      router.replace('/');
+      setUser(null);
+      console.log('[Auth] Local logout complete - useEffect will handle navigation');
     }
-  }, [router]);
+  }, []);
 
   const value: AuthContextType = {
     user,
