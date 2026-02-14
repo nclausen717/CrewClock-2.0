@@ -61,8 +61,8 @@ export function registerReportsRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
   /**
-   * GET /api/reports/daily?date=YYYY-MM-DD
-   * Returns daily report for specified date
+   * GET /api/reports/daily?date=YYYY-MM-DD&employeeId=<optional>
+   * Returns daily report for specified date, optionally filtered by employee
    */
   app.fastify.get(
     '/api/reports/daily',
@@ -75,6 +75,7 @@ export function registerReportsRoutes(app: App) {
           required: ['date'],
           properties: {
             date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+            employeeId: { type: 'string' },
           },
         },
         response: {
@@ -137,14 +138,25 @@ export function registerReportsRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { date } = request.query as { date: string };
+      const { date, employeeId } = request.query as { date: string; employeeId?: string };
 
-      app.logger.info({ userId: session.user.id, date }, 'Generating daily report');
+      app.logger.info({ userId: session.user.id, date, employeeId }, 'Generating daily report');
 
       try {
         const reportDate = parseDate(date);
         const nextDay = new Date(reportDate);
         nextDay.setDate(nextDay.getDate() + 1);
+
+        // Build where conditions
+        const whereConditions: any[] = [
+          gte(timeEntries.clockInTime, reportDate),
+          lte(timeEntries.clockInTime, nextDay),
+          isNotNull(timeEntries.clockOutTime),
+        ];
+
+        if (employeeId) {
+          whereConditions.push(eq(timeEntries.employeeId, employeeId));
+        }
 
         // Get all time entries for this date
         const entries = await app.db
@@ -160,13 +172,7 @@ export function registerReportsRoutes(app: App) {
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
           .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
-          .where(
-            and(
-              gte(timeEntries.clockInTime, reportDate),
-              lte(timeEntries.clockInTime, nextDay),
-              isNotNull(timeEntries.clockOutTime)
-            )
-          );
+          .where(and(...whereConditions));
 
         // Calculate hours and organize data
         const employeeMap = new Map<string, { name: string; hours: number; jobSites: Map<string, { name: string; hours: number }> }>();
@@ -242,8 +248,8 @@ export function registerReportsRoutes(app: App) {
   );
 
   /**
-   * GET /api/reports/weekly?startDate=YYYY-MM-DD
-   * Returns weekly report (Monday-Saturday)
+   * GET /api/reports/weekly?startDate=YYYY-MM-DD&employeeId=<optional>
+   * Returns weekly report (Monday-Saturday), optionally filtered by employee
    */
   app.fastify.get(
     '/api/reports/weekly',
@@ -256,6 +262,7 @@ export function registerReportsRoutes(app: App) {
           required: ['startDate'],
           properties: {
             startDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+            employeeId: { type: 'string' },
           },
         },
         response: {
@@ -277,15 +284,26 @@ export function registerReportsRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { startDate } = request.query as { startDate: string };
+      const { startDate, employeeId } = request.query as { startDate: string; employeeId?: string };
 
-      app.logger.info({ userId: session.user.id, startDate }, 'Generating weekly report');
+      app.logger.info({ userId: session.user.id, startDate, employeeId }, 'Generating weekly report');
 
       try {
         const weekStart = getMonday(parseDate(startDate));
         const weekEnd = getSaturday(weekStart);
         const nextDay = new Date(weekEnd);
         nextDay.setDate(nextDay.getDate() + 1);
+
+        // Build where conditions
+        const whereConditions: any[] = [
+          gte(timeEntries.clockInTime, weekStart),
+          lte(timeEntries.clockInTime, nextDay),
+          isNotNull(timeEntries.clockOutTime),
+        ];
+
+        if (employeeId) {
+          whereConditions.push(eq(timeEntries.employeeId, employeeId));
+        }
 
         // Get all time entries for this week
         const entries = await app.db
@@ -301,13 +319,7 @@ export function registerReportsRoutes(app: App) {
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
           .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
-          .where(
-            and(
-              gte(timeEntries.clockInTime, weekStart),
-              lte(timeEntries.clockInTime, nextDay),
-              isNotNull(timeEntries.clockOutTime)
-            )
-          );
+          .where(and(...whereConditions));
 
         // Calculate hours and organize data
         const employeeMap = new Map<string, { name: string; hours: number; jobSites: Map<string, { name: string; hours: number }> }>();
@@ -393,8 +405,8 @@ export function registerReportsRoutes(app: App) {
   );
 
   /**
-   * GET /api/reports/monthly?year=YYYY&month=MM
-   * Returns monthly report broken down by pay periods (Monday-Saturday)
+   * GET /api/reports/monthly?year=YYYY&month=MM&employeeId=<optional>
+   * Returns monthly report broken down by pay periods (Monday-Saturday), optionally filtered by employee
    */
   app.fastify.get(
     '/api/reports/monthly',
@@ -408,6 +420,7 @@ export function registerReportsRoutes(app: App) {
           properties: {
             year: { type: 'integer', minimum: 2000, maximum: 2100 },
             month: { type: 'integer', minimum: 1, maximum: 12 },
+            employeeId: { type: 'string' },
           },
         },
         response: {
@@ -430,13 +443,24 @@ export function registerReportsRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { year, month } = request.query as { year: string; month: string };
+      const { year, month, employeeId } = request.query as { year: string; month: string; employeeId?: string };
 
-      app.logger.info({ userId: session.user.id, year, month }, 'Generating monthly report');
+      app.logger.info({ userId: session.user.id, year, month, employeeId }, 'Generating monthly report');
 
       try {
         const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
         const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+
+        // Build where conditions
+        const whereConditions: any[] = [
+          gte(timeEntries.clockInTime, monthStart),
+          lte(timeEntries.clockInTime, monthEnd),
+          isNotNull(timeEntries.clockOutTime),
+        ];
+
+        if (employeeId) {
+          whereConditions.push(eq(timeEntries.employeeId, employeeId));
+        }
 
         // Get all time entries for this month
         const entries = await app.db
@@ -452,13 +476,7 @@ export function registerReportsRoutes(app: App) {
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
           .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
-          .where(
-            and(
-              gte(timeEntries.clockInTime, monthStart),
-              lte(timeEntries.clockInTime, monthEnd),
-              isNotNull(timeEntries.clockOutTime)
-            )
-          );
+          .where(and(...whereConditions));
 
         // Group entries by pay period (Monday-Saturday)
         const payPeriodMap = new Map<string, typeof entries>();
@@ -593,8 +611,8 @@ export function registerReportsRoutes(app: App) {
   );
 
   /**
-   * GET /api/reports/daily/csv?date=YYYY-MM-DD
-   * Returns CSV file for daily report
+   * GET /api/reports/daily/csv?date=YYYY-MM-DD&employeeId=<optional>
+   * Returns CSV file for daily report, optionally filtered by employee
    */
   app.fastify.get(
     '/api/reports/daily/csv',
@@ -607,6 +625,7 @@ export function registerReportsRoutes(app: App) {
           required: ['date'],
           properties: {
             date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+            employeeId: { type: 'string' },
           },
         },
       },
@@ -615,14 +634,25 @@ export function registerReportsRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { date } = request.query as { date: string };
+      const { date, employeeId } = request.query as { date: string; employeeId?: string };
 
-      app.logger.info({ userId: session.user.id, date }, 'Generating daily CSV report');
+      app.logger.info({ userId: session.user.id, date, employeeId }, 'Generating daily CSV report');
 
       try {
         const reportDate = parseDate(date);
         const nextDay = new Date(reportDate);
         nextDay.setDate(nextDay.getDate() + 1);
+
+        // Build where conditions
+        const whereConditions: any[] = [
+          gte(timeEntries.clockInTime, reportDate),
+          lte(timeEntries.clockInTime, nextDay),
+          isNotNull(timeEntries.clockOutTime),
+        ];
+
+        if (employeeId) {
+          whereConditions.push(eq(timeEntries.employeeId, employeeId));
+        }
 
         // Get all time entries for this date
         const entries = await app.db
@@ -635,13 +665,7 @@ export function registerReportsRoutes(app: App) {
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
           .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
-          .where(
-            and(
-              gte(timeEntries.clockInTime, reportDate),
-              lte(timeEntries.clockInTime, nextDay),
-              isNotNull(timeEntries.clockOutTime)
-            )
-          );
+          .where(and(...whereConditions));
 
         // Build CSV
         const csvLines = ['Employee Name,Job Site,Hours Worked,Date'];
@@ -668,8 +692,8 @@ export function registerReportsRoutes(app: App) {
   );
 
   /**
-   * GET /api/reports/weekly/csv?startDate=YYYY-MM-DD
-   * Returns CSV file for weekly report
+   * GET /api/reports/weekly/csv?startDate=YYYY-MM-DD&employeeId=<optional>
+   * Returns CSV file for weekly report, optionally filtered by employee
    */
   app.fastify.get(
     '/api/reports/weekly/csv',
@@ -682,6 +706,7 @@ export function registerReportsRoutes(app: App) {
           required: ['startDate'],
           properties: {
             startDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+            employeeId: { type: 'string' },
           },
         },
       },
@@ -690,15 +715,26 @@ export function registerReportsRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { startDate } = request.query as { startDate: string };
+      const { startDate, employeeId } = request.query as { startDate: string; employeeId?: string };
 
-      app.logger.info({ userId: session.user.id, startDate }, 'Generating weekly CSV report');
+      app.logger.info({ userId: session.user.id, startDate, employeeId }, 'Generating weekly CSV report');
 
       try {
         const weekStart = getMonday(parseDate(startDate));
         const weekEnd = getSaturday(weekStart);
         const nextDay = new Date(weekEnd);
         nextDay.setDate(nextDay.getDate() + 1);
+
+        // Build where conditions
+        const whereConditions: any[] = [
+          gte(timeEntries.clockInTime, weekStart),
+          lte(timeEntries.clockInTime, nextDay),
+          isNotNull(timeEntries.clockOutTime),
+        ];
+
+        if (employeeId) {
+          whereConditions.push(eq(timeEntries.employeeId, employeeId));
+        }
 
         // Get all time entries for this week
         const entries = await app.db
@@ -713,13 +749,7 @@ export function registerReportsRoutes(app: App) {
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
           .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
-          .where(
-            and(
-              gte(timeEntries.clockInTime, weekStart),
-              lte(timeEntries.clockInTime, nextDay),
-              isNotNull(timeEntries.clockOutTime)
-            )
-          );
+          .where(and(...whereConditions));
 
         // Calculate employee weekly totals
         const employeeMap = new Map<string, { name: string; hours: number; jobSites: string[] }>();
@@ -771,8 +801,8 @@ export function registerReportsRoutes(app: App) {
   );
 
   /**
-   * GET /api/reports/monthly/csv?year=YYYY&month=MM
-   * Returns CSV file for monthly report
+   * GET /api/reports/monthly/csv?year=YYYY&month=MM&employeeId=<optional>
+   * Returns CSV file for monthly report, optionally filtered by employee
    */
   app.fastify.get(
     '/api/reports/monthly/csv',
@@ -786,6 +816,7 @@ export function registerReportsRoutes(app: App) {
           properties: {
             year: { type: 'integer', minimum: 2000, maximum: 2100 },
             month: { type: 'integer', minimum: 1, maximum: 12 },
+            employeeId: { type: 'string' },
           },
         },
       },
@@ -794,13 +825,24 @@ export function registerReportsRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { year, month } = request.query as { year: string; month: string };
+      const { year, month, employeeId } = request.query as { year: string; month: string; employeeId?: string };
 
-      app.logger.info({ userId: session.user.id, year, month }, 'Generating monthly CSV report');
+      app.logger.info({ userId: session.user.id, year, month, employeeId }, 'Generating monthly CSV report');
 
       try {
         const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
         const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+
+        // Build where conditions
+        const whereConditions: any[] = [
+          gte(timeEntries.clockInTime, monthStart),
+          lte(timeEntries.clockInTime, monthEnd),
+          isNotNull(timeEntries.clockOutTime),
+        ];
+
+        if (employeeId) {
+          whereConditions.push(eq(timeEntries.employeeId, employeeId));
+        }
 
         // Get all time entries for this month
         const entries = await app.db
@@ -815,13 +857,7 @@ export function registerReportsRoutes(app: App) {
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
           .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
-          .where(
-            and(
-              gte(timeEntries.clockInTime, monthStart),
-              lte(timeEntries.clockInTime, monthEnd),
-              isNotNull(timeEntries.clockOutTime)
-            )
-          );
+          .where(and(...whereConditions));
 
         // Group by employee and pay period
         const employeePayPeriodMap = new Map<string, Map<string, { name: string; hours: number; jobSites: string[] }>>();
