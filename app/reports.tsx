@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Modal } from '@/components/ui/Modal';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { authenticatedGet, getToken, BACKEND_URL } from '@/utils/api';
@@ -136,6 +136,27 @@ export default function ReportsScreen() {
     return new Date(d.setDate(diff));
   };
 
+  const getSaturday = (monday: Date): Date => {
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate() + 5);
+    return saturday;
+  };
+
+  const getDateRangeDisplay = (): string => {
+    if (selectedType === 'daily') {
+      return formatDateDisplay(selectedDate);
+    } else if (selectedType === 'weekly') {
+      const monday = getMonday(selectedDate);
+      const saturday = getSaturday(monday);
+      return `${formatDateDisplay(monday)} - ${formatDateDisplay(saturday)}`;
+    } else {
+      return selectedDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long'
+      });
+    }
+  };
+
   const handleGenerateReport = async () => {
     console.log('User tapped Generate Report button', { type: selectedType, date: selectedDate, employeeId: selectedEmployeeId });
     setLoading(true);
@@ -239,20 +260,22 @@ export default function ReportsScreen() {
     }
   };
 
-  const onDateChange = (event: any, date?: Date) => {
-    console.log('Date picker changed:', { eventType: event?.type, date });
+  const onDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    console.log('Date picker changed:', { eventType: event?.type, date, platform: Platform.OS });
     
-    // On Android, the picker closes automatically after selection
     if (Platform.OS === 'android') {
+      // On Android, the picker closes automatically
       setShowDatePicker(false);
       
-      // Update the date if one was selected (user didn't cancel)
-      if (date && event.type !== 'dismissed') {
+      // Only update if user selected a date (didn't dismiss/cancel)
+      if (event.type === 'set' && date) {
         setSelectedDate(date);
         console.log('Date updated to:', date);
+      } else {
+        console.log('Date picker dismissed without selection');
       }
     } else {
-      // On iOS, always update the date as the user scrolls through the picker
+      // On iOS, the picker stays open and updates as user scrolls
       if (date) {
         setSelectedDate(date);
         console.log('Date updated to:', date);
@@ -261,12 +284,12 @@ export default function ReportsScreen() {
   };
 
   const closeDatePicker = () => {
-    console.log('Closing date picker');
+    console.log('Closing date picker (iOS Done button)');
     setShowDatePicker(false);
   };
 
+  const dateRangeDisplay = getDateRangeDisplay();
   const reportTypeDisplay = selectedType === 'daily' ? 'Daily' : selectedType === 'weekly' ? 'Weekly' : 'Monthly';
-  const dateDisplay = formatDateDisplay(selectedDate);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -286,7 +309,11 @@ export default function ReportsScreen() {
           <View style={styles.typeSelector}>
             <TouchableOpacity
               style={[styles.typeButton, selectedType === 'daily' && styles.typeButtonActive]}
-              onPress={() => setSelectedType('daily')}
+              onPress={() => {
+                console.log('User selected Daily report type');
+                setSelectedType('daily');
+                setReportData(null);
+              }}
             >
               <IconSymbol
                 ios_icon_name="calendar"
@@ -301,7 +328,11 @@ export default function ReportsScreen() {
 
             <TouchableOpacity
               style={[styles.typeButton, selectedType === 'weekly' && styles.typeButtonActive]}
-              onPress={() => setSelectedType('weekly')}
+              onPress={() => {
+                console.log('User selected Weekly report type');
+                setSelectedType('weekly');
+                setReportData(null);
+              }}
             >
               <IconSymbol
                 ios_icon_name="calendar"
@@ -316,7 +347,11 @@ export default function ReportsScreen() {
 
             <TouchableOpacity
               style={[styles.typeButton, selectedType === 'monthly' && styles.typeButtonActive]}
-              onPress={() => setSelectedType('monthly')}
+              onPress={() => {
+                console.log('User selected Monthly report type');
+                setSelectedType('monthly');
+                setReportData(null);
+              }}
             >
               <IconSymbol
                 ios_icon_name="calendar"
@@ -341,7 +376,11 @@ export default function ReportsScreen() {
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedEmployeeId}
-                onValueChange={(itemValue) => setSelectedEmployeeId(itemValue)}
+                onValueChange={(itemValue) => {
+                  console.log('User selected employee filter:', itemValue);
+                  setSelectedEmployeeId(itemValue);
+                  setReportData(null);
+                }}
                 style={styles.picker}
                 dropdownIconColor="#b0c4de"
               >
@@ -355,7 +394,16 @@ export default function ReportsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Date</Text>
+          <Text style={styles.sectionTitle}>Select Date Range</Text>
+          <View style={styles.dateRangeInfo}>
+            <Text style={styles.dateRangeLabel}>
+              {selectedType === 'daily' && 'Selected Date:'}
+              {selectedType === 'weekly' && 'Week (Mon-Sat):'}
+              {selectedType === 'monthly' && 'Selected Month:'}
+            </Text>
+            <Text style={styles.dateRangeValue}>{dateRangeDisplay}</Text>
+          </View>
+          
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => {
@@ -369,7 +417,11 @@ export default function ReportsScreen() {
               size={24}
               color={colors.crewLeadPrimary}
             />
-            <Text style={styles.dateButtonText}>{dateDisplay}</Text>
+            <Text style={styles.dateButtonText}>
+              {selectedType === 'daily' && 'Change Date'}
+              {selectedType === 'weekly' && 'Change Week'}
+              {selectedType === 'monthly' && 'Change Month'}
+            </Text>
             <IconSymbol
               ios_icon_name="chevron.down"
               android_material_icon_name="arrow-drop-down"
@@ -386,6 +438,7 @@ export default function ReportsScreen() {
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={onDateChange}
                 maximumDate={new Date()}
+                textColor="#ffffff"
               />
               {Platform.OS === 'ios' && (
                 <TouchableOpacity
@@ -560,6 +613,24 @@ const styles = StyleSheet.create({
   },
   typeButtonTextActive: {
     color: '#ffffff',
+  },
+  dateRangeInfo: {
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 53, 0.3)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  dateRangeLabel: {
+    fontSize: 13,
+    color: '#b0c4de',
+    marginBottom: 6,
+  },
+  dateRangeValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.crewLeadPrimary,
   },
   dateButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
