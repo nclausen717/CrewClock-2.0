@@ -42,10 +42,6 @@ export default function EmployeesScreen() {
     confirmText: 'OK',
   });
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
   const showModal = (
     title: string,
     message: string,
@@ -73,6 +69,10 @@ export default function EmployeesScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
   const handleAddEmployee = async () => {
     console.log('[API] User tapped Add Employee button', { name, email, isCrewLeader });
