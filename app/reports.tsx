@@ -90,6 +90,7 @@ export default function ReportsScreen() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
   const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [showEmployeePicker, setShowEmployeePicker] = useState(false);
 
   const fetchEmployees = useCallback(async () => {
     console.log('Fetching employees for report filtering');
@@ -323,10 +324,20 @@ export default function ReportsScreen() {
     console.log('User selected employee filter:', employeeId);
     setSelectedEmployeeId(employeeId);
     setReportData(null);
+    setShowEmployeePicker(false);
   }, []);
+
+  const getSelectedEmployeeName = (): string => {
+    if (selectedEmployeeId === 'all') {
+      return 'All Employees';
+    }
+    const employee = employees.find(emp => emp.id === selectedEmployeeId);
+    return employee ? employee.name : 'All Employees';
+  };
 
   const dateRangeDisplay = getDateRangeDisplay();
   const reportTypeDisplay = selectedType === 'daily' ? 'Daily' : selectedType === 'weekly' ? 'Weekly' : 'Monthly';
+  const selectedEmployeeName = getSelectedEmployeeName();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -394,23 +405,83 @@ export default function ReportsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Filter by Employee</Text>
           {loadingEmployees ? (
-            <View style={styles.pickerContainer}>
+            <View style={styles.employeeButton}>
               <ActivityIndicator color={colors.crewLeadPrimary} />
             </View>
           ) : (
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedEmployeeId}
-                onValueChange={handleEmployeeChange}
-                style={styles.picker}
-                dropdownIconColor="#b0c4de"
+            <>
+              <TouchableOpacity
+                style={styles.employeeButton}
+                onPress={() => setShowEmployeePicker(!showEmployeePicker)}
               >
-                <Picker.Item label="All Employees" value="all" />
-                {employees.map((employee) => (
-                  <Picker.Item key={employee.id} label={employee.name} value={employee.id} />
-                ))}
-              </Picker>
-            </View>
+                <IconSymbol
+                  ios_icon_name="person.circle"
+                  android_material_icon_name="person"
+                  size={24}
+                  color={colors.crewLeadPrimary}
+                />
+                <Text style={styles.employeeButtonText}>{selectedEmployeeName}</Text>
+                <IconSymbol
+                  ios_icon_name="chevron.down"
+                  android_material_icon_name="arrow-drop-down"
+                  size={24}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
+
+              {showEmployeePicker && (
+                <View style={styles.employeePickerContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.employeeOption,
+                      selectedEmployeeId === 'all' && styles.employeeOptionSelected
+                    ]}
+                    onPress={() => handleEmployeeChange('all')}
+                  >
+                    <Text style={[
+                      styles.employeeOptionText,
+                      selectedEmployeeId === 'all' && styles.employeeOptionTextSelected
+                    ]}>
+                      All Employees
+                    </Text>
+                    {selectedEmployeeId === 'all' && (
+                      <IconSymbol
+                        ios_icon_name="checkmark"
+                        android_material_icon_name="check"
+                        size={20}
+                        color={colors.crewLeadPrimary}
+                      />
+                    )}
+                  </TouchableOpacity>
+
+                  {employees.map((employee) => (
+                    <TouchableOpacity
+                      key={employee.id}
+                      style={[
+                        styles.employeeOption,
+                        selectedEmployeeId === employee.id && styles.employeeOptionSelected
+                      ]}
+                      onPress={() => handleEmployeeChange(employee.id)}
+                    >
+                      <Text style={[
+                        styles.employeeOptionText,
+                        selectedEmployeeId === employee.id && styles.employeeOptionTextSelected
+                      ]}>
+                        {employee.name}
+                      </Text>
+                      {selectedEmployeeId === employee.id && (
+                        <IconSymbol
+                          ios_icon_name="checkmark"
+                          android_material_icon_name="check"
+                          size={20}
+                          color={colors.crewLeadPrimary}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </>
           )}
         </View>
 
@@ -653,6 +724,50 @@ const styles = StyleSheet.create({
   typeButtonTextActive: {
     color: '#ffffff',
   },
+  employeeButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  employeeButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  employeePickerContainer: {
+    marginTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  employeeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  employeeOptionSelected: {
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+  },
+  employeeOptionText: {
+    fontSize: 16,
+    color: '#b0c4de',
+    fontWeight: '500',
+  },
+  employeeOptionTextSelected: {
+    color: colors.crewLeadPrimary,
+    fontWeight: '600',
+  },
   dateRangeInfo: {
     backgroundColor: 'rgba(255, 107, 53, 0.15)',
     borderWidth: 1,
@@ -726,17 +841,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  pickerContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    overflow: 'hidden',
-    minHeight: 50,
-    justifyContent: 'center',
-  },
-  picker: {
-    color: '#ffffff',
-    backgroundColor: 'transparent',
   },
   generateButton: {
     backgroundColor: colors.crewLeadPrimary,
