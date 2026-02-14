@@ -161,6 +161,30 @@ export default function HomeScreen() {
             <>
               <TouchableOpacity 
                 style={styles.actionCard}
+                onPress={() => router.push('/crew-dashboard')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: `${colors.success}20` }]}>
+                  <IconSymbol
+                    ios_icon_name="chart.bar.fill"
+                    android_material_icon_name="dashboard"
+                    size={28}
+                    color={colors.success}
+                  />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Live Crew Dashboard</Text>
+                  <Text style={styles.actionDescription}>Real-time crew hours overview</Text>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionCard}
                 onPress={() => router.push('/employees')}
               >
                 <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
