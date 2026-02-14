@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
@@ -116,12 +115,6 @@ export default function AdminLoginScreen() {
               source={resolveImageSource(require('@/assets/images/626f7963-3d10-4d90-9b55-8ec79075913c.png'))}
               style={styles.logoImage}
               resizeMode="contain"
-            />
-            <IconSymbol
-              ios_icon_name="shield.fill"
-              android_material_icon_name="admin-panel-settings"
-              size={60}
-              color={colors.adminPrimary}
             />
             <Text style={styles.title}>Admin</Text>
             <Text style={styles.modeTitle}>{modeText}</Text>
