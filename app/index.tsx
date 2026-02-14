@@ -21,9 +21,24 @@ export default function WelcomeScreen() {
 
   console.log('[Welcome] Rendering - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
 
+  // If authenticated, don't render anything (navigation will handle redirect)
+  if (isAuthenticated && user) {
+    console.log('[Welcome] User authenticated, showing loading while redirecting...');
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={[styles.content, { justifyContent: 'center' }]}>
+            <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
+            <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading...</Text>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
   // Always render the container with background color
   return (
-    <View style={styles.container} key={`welcome-${Date.now()}`}>
+    <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {isLoading ? (
           <View style={[styles.content, { justifyContent: 'center' }]}>

@@ -172,20 +172,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state and set loading to false immediately
+      // Clear user state FIRST
       setUser(null);
-      setIsLoading(false);
-      console.log('[Auth] User state cleared and loading set to false');
+      console.log('[Auth] User state cleared');
       
-      // Navigate to welcome screen
+      // Navigate to welcome screen immediately
       console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
       
-      // Reset logout flag after a brief delay
+      // Set loading to false after navigation
+      setTimeout(() => {
+        setIsLoading(false);
+        console.log('[Auth] Loading set to false');
+      }, 100);
+      
+      // Reset logout flag after navigation completes
       setTimeout(() => {
         isLoggingOutRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 300);
+      }, 500);
       
       console.log('[Auth] Logout process complete');
       
@@ -196,7 +201,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setIsLoading(false);
       router.replace('/');
-      isLoggingOutRef.current = false;
+      setTimeout(() => {
+        isLoggingOutRef.current = false;
+      }, 500);
     }
   }, [router]);
 
