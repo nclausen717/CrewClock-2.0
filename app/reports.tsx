@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,9 +15,10 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Modal } from '@/components/ui/Modal';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { authenticatedGet, getToken, BACKEND_URL } from '@/utils/api';
+import { Picker } from '@react-native-picker/picker';
 
 interface ReportEmployee {
   employeeId: string;
@@ -69,6 +70,13 @@ interface MonthlyReport {
 
 type ReportType = 'daily' | 'weekly' | 'monthly';
 
+interface Employee {
+  id: string;
+  name: string;
+  email: string | null;
+  isCrewLeader: boolean;
+}
+
 export default function ReportsScreen() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<ReportType>('daily');
@@ -78,6 +86,28 @@ export default function ReportsScreen() {
   const [reportData, setReportData] = useState<DailyReport | WeeklyReport | MonthlyReport | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({ title: '', message: '', type: 'info' as 'info' | 'error' | 'success' | 'warning' });
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    console.log('Fetching employees for report filtering');
+    setLoadingEmployees(true);
+    try {
+      const response = await authenticatedGet<Employee[]>('/api/employees');
+      setEmployees(response);
+      console.log('[API] Employees fetched:', response.length);
+    } catch (error: any) {
+      console.error('[API] Error fetching employees:', error);
+      showModal('Error', 'Failed to load employees. Please try again.', 'error');
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
 
   const showModal = (title: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => {
     setModalConfig({ title, message, type });
@@ -107,24 +137,25 @@ export default function ReportsScreen() {
   };
 
   const handleGenerateReport = async () => {
-    console.log('User tapped Generate Report button', { type: selectedType, date: selectedDate });
+    console.log('User tapped Generate Report button', { type: selectedType, date: selectedDate, employeeId: selectedEmployeeId });
     setLoading(true);
     setReportData(null);
 
     try {
       let endpoint = '';
+      const employeeParam = selectedEmployeeId !== 'all' ? `&employeeId=${selectedEmployeeId}` : '';
       
       if (selectedType === 'daily') {
         const dateStr = formatDateForAPI(selectedDate);
-        endpoint = `/api/reports/daily?date=${dateStr}`;
+        endpoint = `/api/reports/daily?date=${dateStr}${employeeParam}`;
       } else if (selectedType === 'weekly') {
         const monday = getMonday(selectedDate);
         const dateStr = formatDateForAPI(monday);
-        endpoint = `/api/reports/weekly?startDate=${dateStr}`;
+        endpoint = `/api/reports/weekly?startDate=${dateStr}${employeeParam}`;
       } else if (selectedType === 'monthly') {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth() + 1;
-        endpoint = `/api/reports/monthly?year=${year}&month=${month}`;
+        endpoint = `/api/reports/monthly?year=${year}&month=${month}${employeeParam}`;
       }
 
       console.log('[API] Fetching report from:', endpoint);
@@ -142,7 +173,7 @@ export default function ReportsScreen() {
   };
 
   const handleExportCSV = async () => {
-    console.log('User tapped Export CSV button');
+    console.log('User tapped Export CSV button', { employeeId: selectedEmployeeId });
     
     if (!reportData) {
       showModal('No Report', 'Please generate a report first.', 'warning');
@@ -154,20 +185,21 @@ export default function ReportsScreen() {
     try {
       let endpoint = '';
       let filename = '';
+      const employeeParam = selectedEmployeeId !== 'all' ? `&employeeId=${selectedEmployeeId}` : '';
       
       if (selectedType === 'daily') {
         const dateStr = formatDateForAPI(selectedDate);
-        endpoint = `/api/reports/daily/csv?date=${dateStr}`;
+        endpoint = `/api/reports/daily/csv?date=${dateStr}${employeeParam}`;
         filename = `daily-report-${dateStr}.csv`;
       } else if (selectedType === 'weekly') {
         const monday = getMonday(selectedDate);
         const dateStr = formatDateForAPI(monday);
-        endpoint = `/api/reports/weekly/csv?startDate=${dateStr}`;
+        endpoint = `/api/reports/weekly/csv?startDate=${dateStr}${employeeParam}`;
         filename = `weekly-report-${dateStr}.csv`;
       } else if (selectedType === 'monthly') {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth() + 1;
-        endpoint = `/api/reports/monthly/csv?year=${year}&month=${month}`;
+        endpoint = `/api/reports/monthly/csv?year=${year}&month=${month}${employeeParam}`;
         filename = `monthly-report-${year}-${String(month).padStart(2, '0')}.csv`;
       }
 
@@ -278,6 +310,29 @@ export default function ReportsScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Filter by Employee</Text>
+          {loadingEmployees ? (
+            <View style={styles.pickerContainer}>
+              <ActivityIndicator color={colors.crewLeadPrimary} />
+            </View>
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedEmployeeId}
+                onValueChange={(itemValue) => setSelectedEmployeeId(itemValue)}
+                style={styles.picker}
+                dropdownIconColor="#b0c4de"
+              >
+                <Picker.Item label="All Employees" value="all" />
+                {employees.map((employee) => (
+                  <Picker.Item key={employee.id} label={employee.name} value={employee.id} />
+                ))}
+              </Picker>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -488,6 +543,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     fontWeight: '500',
+  },
+  pickerContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    overflow: 'hidden',
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+  picker: {
+    color: '#ffffff',
+    backgroundColor: 'transparent',
   },
   generateButton: {
     backgroundColor: colors.crewLeadPrimary,
