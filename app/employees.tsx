@@ -94,12 +94,15 @@ export default function EmployeesScreen() {
     setAddingEmployee(true);
     
     try {
+      // Ensure email is null if empty, not an empty string
+      const emailToSend = email.trim() === '' ? null : email.trim();
+      
       const response = await authenticatedPost<{ 
         employee: Employee; 
         generatedPassword?: string;
       }>('/api/employees', {
         name: name.trim(),
-        email: email.trim() || null,
+        email: emailToSend,
         isCrewLeader,
       });
 
