@@ -728,7 +728,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pickerContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
     overflow: 'hidden',
     minHeight: 50,
