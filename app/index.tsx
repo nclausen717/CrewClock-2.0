@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,16 +11,25 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function WelcomeScreen() {
   const router = useRouter();
   const { isLoading, isAuthenticated, user } = useAuth();
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     console.log('[Welcome] Screen mounted/updated:', { isLoading, isAuthenticated, hasUser: !!user });
+    
+    // Force screen to be visible after a short delay to prevent black screen
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 50);
+    
+    return () => clearTimeout(timer);
   }, [isLoading, isAuthenticated, user]);
 
   const crewText = 'Crew';
   const clockText = 'Clock';
 
-  console.log('[Welcome] Rendering - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
+  console.log('[Welcome] Rendering - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'isVisible:', isVisible);
 
+  // Always render the container with background to prevent black screen
   // Show loading spinner during initial load or when authenticated (redirecting)
   const showLoading = isLoading || (isAuthenticated && user);
   
@@ -29,7 +38,7 @@ export default function WelcomeScreen() {
     console.log('[Welcome] Showing loading state:', loadingText);
     
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { opacity: isVisible ? 1 : 0 }]}>
         <SafeAreaView style={styles.safeArea}>
           <View style={[styles.content, { justifyContent: 'center' }]}>
             <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
@@ -44,7 +53,7 @@ export default function WelcomeScreen() {
   console.log('[Welcome] Showing login options');
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { opacity: isVisible ? 1 : 0 }]}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.header}>

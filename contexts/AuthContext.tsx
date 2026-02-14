@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
   const isLoggingOutRef = useRef(false);
+  const hasNavigatedRef = useRef(false);
 
   // Check session on mount
   useEffect(() => {
@@ -72,8 +73,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
-      console.log('[Auth] User not authenticated, redirecting to welcome screen');
-      router.replace('/');
+      // Only navigate if we haven't already navigated during this logout
+      if (!hasNavigatedRef.current) {
+        console.log('[Auth] User not authenticated, redirecting to welcome screen');
+        hasNavigatedRef.current = true;
+        router.replace('/');
+        // Reset the flag after navigation completes
+        setTimeout(() => {
+          hasNavigatedRef.current = false;
+        }, 500);
+      }
     } else if (user && onWelcomeScreen) {
       // User is authenticated and on welcome screen, redirect to home
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
@@ -180,13 +189,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       console.log('[Auth] User state cleared');
       
+      // Set loading to false to ensure UI updates
+      setIsLoading(false);
+      console.log('[Auth] Loading state set to false');
+      
       // Navigate to welcome screen
       console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
       
-      // Reset logout flag immediately (no delay needed)
-      isLoggingOutRef.current = false;
-      console.log('[Auth] Logout complete');
+      // Reset logout flag after a short delay to allow navigation to complete
+      setTimeout(() => {
+        isLoggingOutRef.current = false;
+        console.log('[Auth] Logout complete');
+      }, 100);
     }
   }, [router]);
 
