@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   logoImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 8,
+    width: 150,
+    height: 150,
+    marginBottom: 4,
   },
   logoContainer: {
     flexDirection: 'row',
