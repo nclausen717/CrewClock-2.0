@@ -7,14 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
-import { Modal } from '@/components/ui/Modal';
 
 export default function HomeScreen() {
   const theme = useTheme();
   const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
 
   // Show loading state while auth is initializing
   if (isLoading) {
@@ -36,14 +34,8 @@ export default function HomeScreen() {
     return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
   };
 
-  const handleSwitchRole = () => {
-    console.log('User tapped Switch Role button');
-    setModalVisible(true);
-  };
-
-  const confirmSwitchRole = async () => {
-    console.log('User confirmed switch role');
-    setModalVisible(false);
+  const handleSwitchRole = async () => {
+    console.log('User tapped Switch Role button - logging out directly');
     setLoading(true);
     
     try {
@@ -242,17 +234,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <Modal
-        visible={modalVisible}
-        title="Switch Role"
-        message="This will return you to the login screen. Are you sure you want to switch roles?"
-        type="info"
-        onClose={() => setModalVisible(false)}
-        onConfirm={confirmSwitchRole}
-        confirmText="Switch Role"
-        cancelText="Cancel"
-      />
     </SafeAreaView>
   );
 }
