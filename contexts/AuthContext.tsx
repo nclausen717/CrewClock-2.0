@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
   const isLoggingOutRef = useRef(false);
+  const hasNavigatedRef = useRef(false);
 
   // Check session on mount
   useEffect(() => {
@@ -64,7 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       onWelcomeScreen, 
       onLoginScreen,
       segments,
-      isLoggingOut: isLoggingOutRef.current
+      isLoggingOut: isLoggingOutRef.current,
+      hasNavigated: hasNavigatedRef.current
     });
 
     // Don't navigate during logout process
@@ -75,12 +77,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
-      console.log('[Auth] User not authenticated, redirecting to welcome screen');
-      router.replace('/');
+      if (!hasNavigatedRef.current) {
+        console.log('[Auth] User not authenticated, redirecting to welcome screen');
+        hasNavigatedRef.current = true;
+        router.replace('/');
+        setTimeout(() => {
+          hasNavigatedRef.current = false;
+        }, 1000);
+      }
     } else if (user && onWelcomeScreen) {
       // User is authenticated and on welcome screen, redirect to home
-      console.log('[Auth] User authenticated on welcome screen, redirecting to home');
-      router.replace('/(tabs)/(home)/');
+      if (!hasNavigatedRef.current) {
+        console.log('[Auth] User authenticated on welcome screen, redirecting to home');
+        hasNavigatedRef.current = true;
+        router.replace('/(tabs)/(home)/');
+        setTimeout(() => {
+          hasNavigatedRef.current = false;
+        }, 1000);
+      }
     }
   }, [user, segments, isLoading]);
 
@@ -175,13 +189,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state - this will trigger the navigation effect
+      // Clear user state FIRST
       setUser(null);
       console.log('[Auth] User state cleared');
       
-      // Navigate to welcome screen immediately
+      // Small delay to ensure state updates propagate
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to welcome screen
+      console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
-      console.log('[Auth] Navigated to welcome screen');
+      console.log('[Auth] Navigation command sent');
       
       console.log('[Auth] Logout process complete');
       
@@ -192,11 +210,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       router.replace('/');
     } finally {
-      // Reset logout flag after navigation completes
+      // Reset logout flag after a short delay
       setTimeout(() => {
         isLoggingOutRef.current = false;
+        hasNavigatedRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 500);
+      }, 300);
     }
   }, [router]);
 

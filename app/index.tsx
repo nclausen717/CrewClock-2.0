@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,7 +12,12 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { isLoading, isAuthenticated, user } = useAuth();
 
-  console.log('[Welcome] Screen state:', { isLoading, isAuthenticated, hasUser: !!user });
+  useEffect(() => {
+    console.log('[Welcome] Screen mounted/updated:', { isLoading, isAuthenticated, hasUser: !!user });
+  }, [isLoading, isAuthenticated, user]);
+
+  const crewText = 'Crew';
+  const clockText = 'Clock';
 
   // Show loading ONLY during initial session check
   if (isLoading) {
@@ -29,8 +34,6 @@ export default function WelcomeScreen() {
 
   // Always render the welcome screen when not loading
   console.log('[Welcome] Rendering welcome screen content');
-  const crewText = 'Crew';
-  const clockText = 'Clock';
 
   return (
     <View style={styles.container}>
