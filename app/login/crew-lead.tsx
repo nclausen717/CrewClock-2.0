@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
@@ -117,13 +116,7 @@ export default function CrewLeadLoginScreen() {
               style={styles.logoImage}
               resizeMode="contain"
             />
-            <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
-              size={60}
-              color={colors.crewLeadPrimary}
-            />
-            <Text style={styles.title}>Crew Lead</Text>
+            <Text style={styles.title}>Crew Leader Login</Text>
             <Text style={styles.modeTitle}>{modeText}</Text>
           </View>
 
