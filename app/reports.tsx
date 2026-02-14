@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  TextInput,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -226,7 +227,6 @@ export default function ReportsScreen() {
 
       console.log('[API] Downloading CSV from:', endpoint);
       
-      // Fetch CSV content from backend
       const token = await getToken();
       const url = `${BACKEND_URL}${endpoint}`;
       
@@ -242,15 +242,24 @@ export default function ReportsScreen() {
       }
 
       const csvContent = await response.text();
-      const fileUri = `${FileSystem.documentDirectory}${filename}`;
-      
-      await FileSystem.writeAsStringAsync(fileUri, csvContent);
-      
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
         showModal('Export Successful', `Report exported as ${filename}`, 'success');
       } else {
-        showModal('Export Complete', `Report saved to ${fileUri}`, 'success');
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, csvContent);
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri);
+          showModal('Export Successful', `Report exported as ${filename}`, 'success');
+        } else {
+          showModal('Export Complete', `Report saved to ${fileUri}`, 'success');
+        }
       }
     } catch (error: any) {
       console.error('[API] Error exporting CSV:', error);
@@ -260,33 +269,61 @@ export default function ReportsScreen() {
     }
   };
 
-  const onDateChange = (event: DateTimePickerEvent, date?: Date) => {
+  const onDateChange = useCallback((event: DateTimePickerEvent, date?: Date) => {
     console.log('Date picker changed:', { eventType: event?.type, date, platform: Platform.OS });
     
     if (Platform.OS === 'android') {
-      // On Android, the picker closes automatically
       setShowDatePicker(false);
       
-      // Only update if user selected a date (didn't dismiss/cancel)
       if (event.type === 'set' && date) {
+        console.log('Android: Date selected and confirmed:', date);
         setSelectedDate(date);
-        console.log('Date updated to:', date);
-      } else {
-        console.log('Date picker dismissed without selection');
+        setReportData(null);
+      } else if (event.type === 'dismissed') {
+        console.log('Android: Date picker dismissed without selection');
       }
     } else {
-      // On iOS, the picker stays open and updates as user scrolls
       if (date) {
+        console.log('iOS: Date updated to:', date);
         setSelectedDate(date);
-        console.log('Date updated to:', date);
+        setReportData(null);
       }
     }
-  };
+  }, []);
 
-  const closeDatePicker = () => {
+  const closeDatePicker = useCallback(() => {
     console.log('Closing date picker (iOS Done button)');
     setShowDatePicker(false);
-  };
+  }, []);
+
+  const handleWebDateChange = useCallback((event: any) => {
+    const dateString = event.target.value;
+    console.log('Web date input changed:', dateString);
+    
+    if (dateString) {
+      const newDate = new Date(dateString + 'T00:00:00');
+      console.log('Web: Date updated to:', newDate);
+      setSelectedDate(newDate);
+      setReportData(null);
+    }
+  }, []);
+
+  const handleOpenDatePicker = useCallback(() => {
+    console.log('User tapped Select Date button');
+    setShowDatePicker(true);
+  }, []);
+
+  const handleTypeChange = useCallback((type: ReportType) => {
+    console.log('User selected report type:', type);
+    setSelectedType(type);
+    setReportData(null);
+  }, []);
+
+  const handleEmployeeChange = useCallback((employeeId: string) => {
+    console.log('User selected employee filter:', employeeId);
+    setSelectedEmployeeId(employeeId);
+    setReportData(null);
+  }, []);
 
   const dateRangeDisplay = getDateRangeDisplay();
   const reportTypeDisplay = selectedType === 'daily' ? 'Daily' : selectedType === 'weekly' ? 'Weekly' : 'Monthly';
@@ -309,11 +346,7 @@ export default function ReportsScreen() {
           <View style={styles.typeSelector}>
             <TouchableOpacity
               style={[styles.typeButton, selectedType === 'daily' && styles.typeButtonActive]}
-              onPress={() => {
-                console.log('User selected Daily report type');
-                setSelectedType('daily');
-                setReportData(null);
-              }}
+              onPress={() => handleTypeChange('daily')}
             >
               <IconSymbol
                 ios_icon_name="calendar"
@@ -328,11 +361,7 @@ export default function ReportsScreen() {
 
             <TouchableOpacity
               style={[styles.typeButton, selectedType === 'weekly' && styles.typeButtonActive]}
-              onPress={() => {
-                console.log('User selected Weekly report type');
-                setSelectedType('weekly');
-                setReportData(null);
-              }}
+              onPress={() => handleTypeChange('weekly')}
             >
               <IconSymbol
                 ios_icon_name="calendar"
@@ -347,11 +376,7 @@ export default function ReportsScreen() {
 
             <TouchableOpacity
               style={[styles.typeButton, selectedType === 'monthly' && styles.typeButtonActive]}
-              onPress={() => {
-                console.log('User selected Monthly report type');
-                setSelectedType('monthly');
-                setReportData(null);
-              }}
+              onPress={() => handleTypeChange('monthly')}
             >
               <IconSymbol
                 ios_icon_name="calendar"
@@ -376,11 +401,7 @@ export default function ReportsScreen() {
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedEmployeeId}
-                onValueChange={(itemValue) => {
-                  console.log('User selected employee filter:', itemValue);
-                  setSelectedEmployeeId(itemValue);
-                  setReportData(null);
-                }}
+                onValueChange={handleEmployeeChange}
                 style={styles.picker}
                 dropdownIconColor="#b0c4de"
               >
@@ -404,51 +425,69 @@ export default function ReportsScreen() {
             <Text style={styles.dateRangeValue}>{dateRangeDisplay}</Text>
           </View>
           
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => {
-              console.log('User tapped Select Date button');
-              setShowDatePicker(true);
-            }}
-          >
-            <IconSymbol
-              ios_icon_name="calendar"
-              android_material_icon_name="calendar-today"
-              size={24}
-              color={colors.crewLeadPrimary}
-            />
-            <Text style={styles.dateButtonText}>
-              {selectedType === 'daily' && 'Change Date'}
-              {selectedType === 'weekly' && 'Change Week'}
-              {selectedType === 'monthly' && 'Change Month'}
-            </Text>
-            <IconSymbol
-              ios_icon_name="chevron.down"
-              android_material_icon_name="arrow-drop-down"
-              size={24}
-              color="#b0c4de"
-            />
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={onDateChange}
-                maximumDate={new Date()}
-                textColor="#ffffff"
+          {Platform.OS === 'web' ? (
+            <View style={styles.webDatePickerContainer}>
+              <IconSymbol
+                ios_icon_name="calendar"
+                android_material_icon_name="calendar-today"
+                size={24}
+                color={colors.crewLeadPrimary}
               />
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={styles.datePickerDoneButton}
-                  onPress={closeDatePicker}
-                >
-                  <Text style={styles.datePickerDoneText}>Done</Text>
-                </TouchableOpacity>
-              )}
+              <TextInput
+                style={styles.webDateInput}
+                // @ts-expect-error - Web-specific props for date input
+                type="date"
+                value={formatDateForAPI(selectedDate)}
+                onChange={handleWebDateChange}
+                max={formatDateForAPI(new Date())}
+              />
             </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={handleOpenDatePicker}
+              >
+                <IconSymbol
+                  ios_icon_name="calendar"
+                  android_material_icon_name="calendar-today"
+                  size={24}
+                  color={colors.crewLeadPrimary}
+                />
+                <Text style={styles.dateButtonText}>
+                  {selectedType === 'daily' && 'Change Date'}
+                  {selectedType === 'weekly' && 'Change Week'}
+                  {selectedType === 'monthly' && 'Change Month'}
+                </Text>
+                <IconSymbol
+                  ios_icon_name="chevron.down"
+                  android_material_icon_name="arrow-drop-down"
+                  size={24}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <View style={styles.datePickerContainer}>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onDateChange}
+                    maximumDate={new Date()}
+                    textColor="#ffffff"
+                  />
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={styles.datePickerDoneButton}
+                      onPress={closeDatePicker}
+                    >
+                      <Text style={styles.datePickerDoneText}>Done</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
           )}
         </View>
 
@@ -648,6 +687,25 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '500',
   },
+  webDatePickerContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  webDateInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ffffff',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    outline: 'none',
+    padding: 0,
+  } as any,
   datePickerContainer: {
     marginTop: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
