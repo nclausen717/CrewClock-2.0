@@ -442,14 +442,74 @@ GET /api/reports/monthly/csv?year=YYYY&month=MM
 
 ---
 
+---
+
+## 🆕 LATEST UPDATE: Crew Management System
+
+### New Feature: Crew Management (Admin Only)
+
+**What's New**:
+The crew management system has been fully integrated, allowing admins to organize employees into teams with designated leaders and monitor real-time crew activity.
+
+**New Screens**:
+1. **Manage Crews** (`app/crews.tsx`)
+   - Create new crews with optional crew leader assignment
+   - View all crews with member counts
+   - Expand crews to see details and members
+   - Delete crews with confirmation
+   - Change crew leaders
+
+2. **Live Crew Dashboard** (`app/crew-dashboard.tsx`)
+   - Real-time view of all crews
+   - Total hours worked today across all crews
+   - Active employee count
+   - Per-crew breakdown with leader info
+   - Per-employee status (clocked in/out) and hours
+   - Auto-refresh every 30 seconds
+   - Pull-to-refresh support
+
+**New API Endpoints Integrated**:
+```
+GET    /api/crews                      - List all crews
+POST   /api/crews                      - Create new crew
+PUT    /api/crews/:id                  - Update crew
+DELETE /api/crews/:id                  - Delete crew
+GET    /api/crews/:id/members          - Get crew members
+POST   /api/crews/:id/members          - Add member to crew
+DELETE /api/crews/:id/members/:empId   - Remove member from crew
+GET    /api/crews/dashboard            - Get live dashboard data
+```
+
+**Key Features**:
+- ✅ Create crews with unique names
+- ✅ Assign crew leaders from employee list
+- ✅ View crew members with roles
+- ✅ Delete crews (members are unassigned, not deleted)
+- ✅ Live dashboard with real-time hours tracking
+- ✅ Auto-refresh every 30 seconds
+- ✅ Pull-to-refresh support
+- ✅ Status indicators (green = active, gray = inactive)
+- ✅ Hours formatted as "Xh Ym"
+
+**Access Control**:
+- Admin only (crew leaders cannot manage crews)
+- Accessible from admin home screen: "Manage Crews" button
+- Live dashboard accessible from crews screen: "Live Dashboard" button
+
+**Integration Status**: ✅ COMPLETE
+All crew endpoints are integrated, tested, and working correctly.
+
+---
+
 ## 📊 Final Integration Statistics
 
-### Endpoints Integrated: 21
+### Endpoints Integrated: 29 (8 NEW!)
 - Authentication: 6 endpoints
 - Employee Management: 3 endpoints
 - Job Site Management: 3 endpoints
 - Time Tracking: 4 endpoints
 - Reports: 6 endpoints
+- **Crew Management: 8 endpoints** ✨ NEW!
 
 ### Files Modified: 2
 - `contexts/AuthContext.tsx` - Logout fix

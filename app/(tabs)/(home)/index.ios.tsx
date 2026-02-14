@@ -203,6 +203,30 @@ export default function HomeScreen() {
                   color="#b0c4de"
                 />
               </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionCard}
+                onPress={() => router.push('/crews')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
+                  <IconSymbol
+                    ios_icon_name="person.3.fill"
+                    android_material_icon_name="groups"
+                    size={28}
+                    color={colors.crewLeadPrimary}
+                  />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Manage Crews</Text>
+                  <Text style={styles.actionDescription}>Organize teams and assign leaders</Text>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color="#b0c4de"
+                />
+              </TouchableOpacity>
             </>
           )}
 
