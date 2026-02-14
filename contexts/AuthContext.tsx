@@ -176,14 +176,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       console.log('[Auth] User state cleared');
       
-      // Explicitly set loading to false to ensure UI updates
-      setIsLoading(false);
-      console.log('[Auth] Loading state set to false');
-      
-      // Navigate to welcome screen
+      // Navigate to welcome screen FIRST
       console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
-      console.log('[Auth] Navigation command sent');
+      
+      // Then set loading to false after a brief delay to allow navigation to start
+      setTimeout(() => {
+        setIsLoading(false);
+        console.log('[Auth] Loading state set to false');
+        
+        // Reset logout flag
+        setTimeout(() => {
+          isLoggingOutRef.current = false;
+          console.log('[Auth] Logout flag reset');
+        }, 100);
+      }, 50);
       
       console.log('[Auth] Logout process complete');
       
@@ -192,14 +199,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Even on error, clear local state
       await removeToken();
       setUser(null);
-      setIsLoading(false);
       router.replace('/');
-    } finally {
-      // Reset logout flag after a short delay to allow navigation to complete
-      setTimeout(() => {
-        isLoggingOutRef.current = false;
-        console.log('[Auth] Logout flag reset');
-      }, 300);
+      setIsLoading(false);
+      isLoggingOutRef.current = false;
     }
   }, [router]);
 

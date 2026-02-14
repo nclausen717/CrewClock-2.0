@@ -37,7 +37,7 @@ export default function WelcomeScreen() {
   // Show welcome screen
   console.log('[Welcome] Rendering welcome screen');
   return (
-    <View style={styles.container}>
+    <View style={styles.container} key={`welcome-${isAuthenticated}-${!!user}`}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.header}>
