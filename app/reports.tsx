@@ -19,7 +19,6 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { authenticatedGet, getToken, BACKEND_URL } from '@/utils/api';
-import { Picker } from '@react-native-picker/picker';
 
 interface ReportEmployee {
   employeeId: string;
@@ -818,7 +817,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     backgroundColor: 'transparent',
     borderWidth: 0,
-    outline: 'none',
     padding: 0,
   } as any,
   datePickerContainer: {
