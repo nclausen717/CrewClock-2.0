@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   clockText: {
     fontSize: 42,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#4CAF50',
   },
   subtitle: {
     fontSize: 18,
