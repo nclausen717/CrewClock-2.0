@@ -40,7 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
   const isLoggingOutRef = useRef(false);
-  const hasNavigatedRef = useRef(false);
 
   // Check session on mount
   useEffect(() => {
@@ -68,30 +67,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       inAuthGroup, 
       onWelcomeScreen, 
       onLoginScreen,
-      segments,
-      hasNavigated: hasNavigatedRef.current
+      segments
     });
 
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
-      if (!hasNavigatedRef.current) {
-        console.log('[Auth] User not authenticated, redirecting to welcome screen');
-        hasNavigatedRef.current = true;
-        router.replace('/');
-        setTimeout(() => {
-          hasNavigatedRef.current = false;
-        }, 1000);
-      }
+      console.log('[Auth] User not authenticated, redirecting to welcome screen');
+      router.replace('/');
     } else if (user && onWelcomeScreen) {
       // User is authenticated and on welcome screen, redirect to home
-      if (!hasNavigatedRef.current) {
-        console.log('[Auth] User authenticated on welcome screen, redirecting to home');
-        hasNavigatedRef.current = true;
-        router.replace('/(tabs)/(home)/');
-        setTimeout(() => {
-          hasNavigatedRef.current = false;
-        }, 1000);
-      }
+      console.log('[Auth] User authenticated on welcome screen, redirecting to home');
+      router.replace('/(tabs)/(home)/');
     }
   }, [user, segments, isLoading]);
 
@@ -190,7 +176,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       console.log('[Auth] User state cleared');
       
-      // Navigate to welcome screen immediately
+      // Explicitly set loading to false to ensure UI updates
+      setIsLoading(false);
+      console.log('[Auth] Loading state set to false');
+      
+      // Navigate to welcome screen
       console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
       console.log('[Auth] Navigation command sent');
@@ -202,14 +192,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Even on error, clear local state
       await removeToken();
       setUser(null);
+      setIsLoading(false);
       router.replace('/');
     } finally {
-      // Reset logout flag after navigation completes
+      // Reset logout flag after a short delay to allow navigation to complete
       setTimeout(() => {
         isLoggingOutRef.current = false;
-        hasNavigatedRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 500);
+      }, 300);
     }
   }, [router]);
 
