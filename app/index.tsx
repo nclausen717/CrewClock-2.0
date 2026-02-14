@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   logoImage: {
-    width: 150,
-    height: 150,
+    width: 180,
+    height: 180,
     marginBottom: 4,
   },
   logoContainer: {
