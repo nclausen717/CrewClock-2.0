@@ -1,11 +1,26 @@
 import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
 
+// Crews table - groups of employees led by a crew leader
+// Note: crewLeaderId is defined below employees due to foreign key ordering
+export const crews = pgTable('crews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  crewLeaderId: uuid('crew_leader_id'), // nullable - crew leader assigned to this crew
+  createdBy: text('created_by').notNull(), // admin user id who created the crew
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 // Employees table - managed by admins
 export const employees = pgTable('employees', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   email: text('email').unique(), // nullable - only for crew leaders who can login
   isCrewLeader: boolean('is_crew_leader').default(false).notNull(),
+  crewId: uuid('crew_id').references(() => crews.id, { onDelete: 'set null' }), // which crew this employee belongs to
   createdBy: text('created_by'), // admin user id who created this employee, null if self-registered crew leader
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
