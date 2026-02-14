@@ -1,12 +1,19 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator, Image, ImageSourcePropType } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Helper to resolve image sources (handles both local and remote URLs)
+function resolveImageSource(source: string | number | ImageSourcePropType | undefined): ImageSourcePropType {
+  if (!source) return { uri: '' };
+  if (typeof source === 'string') return { uri: source };
+  return source as ImageSourcePropType;
+}
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -57,11 +64,10 @@ export default function WelcomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <IconSymbol
-              ios_icon_name="clock.fill"
-              android_material_icon_name="schedule"
-              size={80}
-              color="#ffffff"
+            <Image
+              source={resolveImageSource(require('@/assets/images/626f7963-3d10-4d90-9b55-8ec79075913c.png'))}
+              style={styles.logoImage}
+              resizeMode="contain"
             />
             <View style={styles.logoContainer}>
               <Text style={styles.crewText}>{crewText}</Text>
@@ -145,6 +151,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 60,
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 8,
   },
   logoContainer: {
     flexDirection: 'row',
