@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[Auth] User authenticated on welcome screen, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [user, segments, isLoading]);
+  }, [user, segments, isLoading, router]);
 
   const checkSession = async () => {
     console.log('[Auth] Checking session...');

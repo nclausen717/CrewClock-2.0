@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -70,7 +70,7 @@ export default function CrewsScreen() {
     setModalVisible(true);
   };
 
-  const fetchCrews = async () => {
+  const fetchCrews = useCallback(async () => {
     console.log('[API] Fetching crews list');
     setLoading(true);
     
@@ -85,9 +85,9 @@ export default function CrewsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     console.log('[API] Fetching employees for crew leader selection');
     
     try {
@@ -97,9 +97,9 @@ export default function CrewsScreen() {
     } catch (error: any) {
       console.error('[API] Failed to fetch employees:', error);
     }
-  };
+  }, []);
 
-  const fetchCrewMembers = async (crewId: string) => {
+  const fetchCrewMembers = useCallback(async (crewId: string) => {
     console.log('[API] Fetching members for crew:', crewId);
     setLoadingMembers(prev => ({ ...prev, [crewId]: true }));
     
@@ -114,12 +114,12 @@ export default function CrewsScreen() {
     } finally {
       setLoadingMembers(prev => ({ ...prev, [crewId]: false }));
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCrews();
     fetchEmployees();
-  }, []);
+  }, [fetchCrews, fetchEmployees]);
 
   const handleAddCrew = async () => {
     console.log('[API] User tapped Add Crew button', { crewName, selectedCrewLeaderId });

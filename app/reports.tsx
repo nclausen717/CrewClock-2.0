@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Modal } from '@/components/ui/Modal';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { authenticatedGet, getToken, BACKEND_URL } from '@/utils/api';
 import { Picker } from '@react-native-picker/picker';
@@ -90,11 +90,7 @@ export default function ReportsScreen() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
   const [loadingEmployees, setLoadingEmployees] = useState(true);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     console.log('Fetching employees for report filtering');
     setLoadingEmployees(true);
     try {
@@ -107,7 +103,11 @@ export default function ReportsScreen() {
     } finally {
       setLoadingEmployees(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const showModal = (title: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => {
     setModalConfig({ title, message, type });
@@ -240,10 +240,29 @@ export default function ReportsScreen() {
   };
 
   const onDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDate(date);
+    console.log('Date picker changed:', { eventType: event?.type, date });
+    
+    // On Android, the picker closes automatically after selection
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+      
+      // Update the date if one was selected (user didn't cancel)
+      if (date && event.type !== 'dismissed') {
+        setSelectedDate(date);
+        console.log('Date updated to:', date);
+      }
+    } else {
+      // On iOS, always update the date as the user scrolls through the picker
+      if (date) {
+        setSelectedDate(date);
+        console.log('Date updated to:', date);
+      }
     }
+  };
+
+  const closeDatePicker = () => {
+    console.log('Closing date picker');
+    setShowDatePicker(false);
   };
 
   const reportTypeDisplay = selectedType === 'daily' ? 'Daily' : selectedType === 'weekly' ? 'Weekly' : 'Monthly';
@@ -339,7 +358,10 @@ export default function ReportsScreen() {
           <Text style={styles.sectionTitle}>Select Date</Text>
           <TouchableOpacity
             style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => {
+              console.log('User tapped Select Date button');
+              setShowDatePicker(true);
+            }}
           >
             <IconSymbol
               ios_icon_name="calendar"
@@ -357,12 +379,23 @@ export default function ReportsScreen() {
           </TouchableOpacity>
 
           {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onDateChange}
-            />
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                maximumDate={new Date()}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.datePickerDoneButton}
+                  onPress={closeDatePicker}
+                >
+                  <Text style={styles.datePickerDoneText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
 
@@ -543,6 +576,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     fontWeight: '500',
+  },
+  datePickerContainer: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  datePickerDoneButton: {
+    marginTop: 12,
+    backgroundColor: colors.crewLeadPrimary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  datePickerDoneText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   pickerContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

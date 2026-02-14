@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -53,7 +53,7 @@ export default function EmployeesScreen() {
     setModalVisible(true);
   };
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     console.log('[API] Fetching employees list');
     setLoading(true);
     
@@ -68,11 +68,11 @@ export default function EmployeesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [fetchEmployees]);
 
   const handleAddEmployee = async () => {
     console.log('[API] User tapped Add Employee button', { name, email, isCrewLeader });

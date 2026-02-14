@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -52,7 +52,7 @@ export default function CrewDashboardScreen() {
     setModalVisible(true);
   };
 
-  const fetchDashboardData = async (isRefresh = false) => {
+  const fetchDashboardData = useCallback(async (isRefresh = false) => {
     console.log('[API] Fetching crew dashboard data');
     if (!isRefresh) {
       setLoading(true);
@@ -70,7 +70,7 @@ export default function CrewDashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -81,7 +81,7 @@ export default function CrewDashboardScreen() {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDashboardData]);
 
   const onRefresh = () => {
     setRefreshing(true);
