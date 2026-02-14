@@ -49,9 +49,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Protected route navigation
   useEffect(() => {
-    // Skip navigation during initial load
-    if (isLoading) {
-      console.log('[Auth] Skipping navigation check (loading)');
+    // Skip navigation during initial load or logout
+    if (isLoading || isLoggingOutRef.current) {
+      if (isLoading) {
+        console.log('[Auth] Skipping navigation check (loading)');
+      } else {
+        console.log('[Auth] Skipping navigation check (logout in progress)');
+      }
       return;
     }
 
@@ -65,15 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       onWelcomeScreen, 
       onLoginScreen,
       segments,
-      isLoggingOut: isLoggingOutRef.current,
       hasNavigated: hasNavigatedRef.current
     });
-
-    // Don't navigate during logout process
-    if (isLoggingOutRef.current) {
-      console.log('[Auth] Skipping navigation (logout in progress)');
-      return;
-    }
 
     if (!user && (inAuthGroup || (!onWelcomeScreen && !onLoginScreen))) {
       // User is not authenticated but trying to access protected routes
@@ -189,14 +186,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state FIRST
+      // Clear user state immediately
       setUser(null);
       console.log('[Auth] User state cleared');
       
-      // Small delay to ensure state updates propagate
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Navigate to welcome screen
+      // Navigate to welcome screen immediately
       console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
       console.log('[Auth] Navigation command sent');
@@ -210,12 +204,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       router.replace('/');
     } finally {
-      // Reset logout flag after a short delay
+      // Reset logout flag after navigation completes
       setTimeout(() => {
         isLoggingOutRef.current = false;
         hasNavigatedRef.current = false;
         console.log('[Auth] Logout flag reset');
-      }, 300);
+      }, 500);
     }
   }, [router]);
 
