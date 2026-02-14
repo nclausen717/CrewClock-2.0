@@ -21,99 +21,98 @@ export default function WelcomeScreen() {
 
   console.log('[Welcome] Rendering - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
 
-  // If authenticated, don't render anything (navigation will handle redirect)
-  if (isAuthenticated && user) {
-    console.log('[Welcome] User authenticated, showing loading while redirecting...');
+  // Show loading spinner during initial load or when authenticated (redirecting)
+  const showLoading = isLoading || (isAuthenticated && user);
+  
+  if (showLoading) {
+    const loadingText = isLoading ? 'Loading...' : 'Redirecting...';
+    console.log('[Welcome] Showing loading state:', loadingText);
+    
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={[styles.content, { justifyContent: 'center' }]}>
             <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-            <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading...</Text>
+            <Text style={[styles.subtitle, { marginTop: 16 }]}>{loadingText}</Text>
           </View>
         </SafeAreaView>
       </View>
     );
   }
 
-  // Always render the container with background color
+  // Show login options when not loading and not authenticated
+  console.log('[Welcome] Showing login options');
+  
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {isLoading ? (
-          <View style={[styles.content, { justifyContent: 'center' }]}>
-            <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-            <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading...</Text>
-          </View>
-        ) : (
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <IconSymbol
-                ios_icon_name="clock.fill"
-                android_material_icon_name="schedule"
-                size={80}
-                color="#ffffff"
-              />
-              <View style={styles.logoContainer}>
-                <Text style={styles.crewText}>{crewText}</Text>
-                <Text style={styles.clockText}>{clockText}</Text>
-              </View>
-              <Text style={styles.subtitle}>Time Tracking Made Simple</Text>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <IconSymbol
+              ios_icon_name="clock.fill"
+              android_material_icon_name="schedule"
+              size={80}
+              color="#ffffff"
+            />
+            <View style={styles.logoContainer}>
+              <Text style={styles.crewText}>{crewText}</Text>
+              <Text style={styles.clockText}>{clockText}</Text>
             </View>
-
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.crewLeadButton}
-                onPress={() => {
-                  console.log('User tapped Crew Lead Login button');
-                  router.push('/login/crew-lead');
-                }}
-              >
-                <LinearGradient
-                  colors={[colors.crewLeadPrimary, colors.crewLeadSecondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.gradientButton}
-                >
-                  <IconSymbol
-                    ios_icon_name="person.fill"
-                    android_material_icon_name="person"
-                    size={24}
-                    color="#ffffff"
-                    style={styles.buttonIcon}
-                  />
-                  <Text style={styles.buttonText}>Crew Lead Login</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.adminButton}
-                onPress={() => {
-                  console.log('User tapped Admin Login button');
-                  router.push('/login/admin');
-                }}
-              >
-                <LinearGradient
-                  colors={[colors.adminPrimary, colors.adminSecondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.gradientButton}
-                >
-                  <IconSymbol
-                    ios_icon_name="shield.fill"
-                    android_material_icon_name="admin-panel-settings"
-                    size={24}
-                    color="#ffffff"
-                    style={styles.buttonIcon}
-                  />
-                  <Text style={styles.buttonText}>Admin Login</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.footerText}>Select your role to continue</Text>
+            <Text style={styles.subtitle}>Time Tracking Made Simple</Text>
           </View>
-        )}
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.crewLeadButton}
+              onPress={() => {
+                console.log('User tapped Crew Lead Login button');
+                router.push('/login/crew-lead');
+              }}
+            >
+              <LinearGradient
+                colors={[colors.crewLeadPrimary, colors.crewLeadSecondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientButton}
+              >
+                <IconSymbol
+                  ios_icon_name="person.fill"
+                  android_material_icon_name="person"
+                  size={24}
+                  color="#ffffff"
+                  style={styles.buttonIcon}
+                />
+                <Text style={styles.buttonText}>Crew Lead Login</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.adminButton}
+              onPress={() => {
+                console.log('User tapped Admin Login button');
+                router.push('/login/admin');
+              }}
+            >
+              <LinearGradient
+                colors={[colors.adminPrimary, colors.adminSecondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientButton}
+              >
+                <IconSymbol
+                  ios_icon_name="shield.fill"
+                  android_material_icon_name="admin-panel-settings"
+                  size={24}
+                  color="#ffffff"
+                  style={styles.buttonIcon}
+                />
+                <Text style={styles.buttonText}>Admin Login</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.footerText}>Select your role to continue</Text>
+        </View>
       </SafeAreaView>
     </View>
   );

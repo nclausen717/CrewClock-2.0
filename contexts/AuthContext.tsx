@@ -166,44 +166,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.warn('[Auth] Server logout failed (non-critical):', error);
       }
-      
-      // Clear local storage
+    } catch (error) {
+      console.error('[Auth] Logout error:', error);
+    } finally {
+      // ALWAYS clear local state, even if server call fails
       console.log('[Auth] Clearing local auth state...');
+      
+      // Clear token
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state FIRST
+      // Clear user state
       setUser(null);
       console.log('[Auth] User state cleared');
       
-      // Navigate to welcome screen immediately
+      // Navigate to welcome screen
       console.log('[Auth] Navigating to welcome screen...');
       router.replace('/');
       
-      // Set loading to false after navigation
-      setTimeout(() => {
-        setIsLoading(false);
-        console.log('[Auth] Loading set to false');
-      }, 100);
-      
-      // Reset logout flag after navigation completes
-      setTimeout(() => {
-        isLoggingOutRef.current = false;
-        console.log('[Auth] Logout flag reset');
-      }, 500);
-      
-      console.log('[Auth] Logout process complete');
-      
-    } catch (error) {
-      console.error('[Auth] Logout error:', error);
-      // Even on error, clear local state
-      await removeToken();
-      setUser(null);
-      setIsLoading(false);
-      router.replace('/');
-      setTimeout(() => {
-        isLoggingOutRef.current = false;
-      }, 500);
+      // Reset logout flag immediately (no delay needed)
+      isLoggingOutRef.current = false;
+      console.log('[Auth] Logout complete');
     }
   }, [router]);
 
