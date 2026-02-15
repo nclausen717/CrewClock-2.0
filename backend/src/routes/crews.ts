@@ -1,7 +1,7 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, isNull, count, gte, lte } from 'drizzle-orm';
-import { crews, employees, timeEntries } from '../db/schema.js';
+import { eq, and, isNull, or, count, gte, lte } from 'drizzle-orm';
+import { crews, employees, timeEntries, jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 export function registerCrewRoutes(app: App) {
@@ -737,27 +737,47 @@ export function registerCrewRoutes(app: App) {
         tags: ['crews'],
         response: {
           200: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                crewId: { type: 'string' },
-                crewName: { type: 'string' },
-                crewLeaderId: { type: ['string', 'null'] },
-                crewLeaderName: { type: ['string', 'null'] },
-                members: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      employeeId: { type: 'string' },
-                      employeeName: { type: 'string' },
-                      isActive: { type: 'boolean' },
-                      hoursToday: { type: 'number' },
+            type: 'object',
+            properties: {
+              crews: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    crewId: { type: 'string' },
+                    crewName: { type: 'string' },
+                    crewLeaderId: { type: ['string', 'null'] },
+                    crewLeaderName: { type: ['string', 'null'] },
+                    members: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          employeeId: { type: 'string' },
+                          employeeName: { type: 'string' },
+                          isActive: { type: 'boolean' },
+                          hoursToday: { type: 'number' },
+                        },
+                      },
                     },
+                    totalHoursToday: { type: 'number' },
                   },
                 },
-                totalHoursToday: { type: 'number' },
+              },
+              individualEmployees: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    employeeId: { type: 'string' },
+                    employeeName: { type: 'string' },
+                    jobSiteId: { type: 'string' },
+                    jobSiteName: { type: 'string' },
+                    isActive: { type: 'boolean' },
+                    hoursToday: { type: 'number' },
+                    clockInTime: { type: 'string' },
+                  },
+                },
               },
             },
           },
@@ -880,9 +900,90 @@ export function registerCrewRoutes(app: App) {
           })
         );
 
-        app.logger.info({ userId: session.user.id, count: dashboardData.length }, 'Dashboard data fetched');
+        // Get individual employees (not assigned to any crew) with active time entries today
+        const individualEmpsData = await app.db
+          .select({
+            employeeId: employees.id,
+            employeeName: employees.name,
+          })
+          .from(employees)
+          .where(and(isNull(employees.crewId)));
 
-        return dashboardData;
+        // Filter and build individual employee dashboard data
+        const individualEmployees = await Promise.all(
+          individualEmpsData.map(async (emp) => {
+            // Get today's time entries with job site info
+            const todayEntries = await app.db
+              .select({
+                id: timeEntries.id,
+                clockInTime: timeEntries.clockInTime,
+                clockOutTime: timeEntries.clockOutTime,
+                jobSiteId: timeEntries.jobSiteId,
+                jobSiteName: jobSites.name,
+              })
+              .from(timeEntries)
+              .innerJoin(jobSites, eq(timeEntries.jobSiteId, jobSites.id))
+              .where(
+                and(
+                  eq(timeEntries.employeeId, emp.employeeId),
+                  gte(timeEntries.clockInTime, todayStart),
+                  lte(timeEntries.clockInTime, todayEnd)
+                )
+              );
+
+            if (todayEntries.length === 0) {
+              return null; // Skip employees with no activity today
+            }
+
+            // Calculate hours and determine if active
+            let totalHours = 0;
+            let isActive = false;
+            let latestJobSiteId = '';
+            let latestJobSiteName = '';
+            let latestClockInTime = '';
+
+            for (const entry of todayEntries) {
+              if (entry.clockOutTime) {
+                const hours =
+                  (new Date(entry.clockOutTime).getTime() - new Date(entry.clockInTime).getTime()) /
+                  (1000 * 60 * 60);
+                totalHours += hours;
+              } else {
+                // Currently clocked in
+                isActive = true;
+                const hours =
+                  (new Date().getTime() - new Date(entry.clockInTime).getTime()) / (1000 * 60 * 60);
+                totalHours += hours;
+                latestJobSiteId = entry.jobSiteId;
+                latestJobSiteName = entry.jobSiteName;
+                latestClockInTime = new Date(entry.clockInTime).toISOString();
+              }
+            }
+
+            return {
+              employeeId: emp.employeeId,
+              employeeName: emp.employeeName,
+              jobSiteId: latestJobSiteId,
+              jobSiteName: latestJobSiteName,
+              isActive,
+              hoursToday: Math.round(totalHours * 100) / 100,
+              clockInTime: isActive ? latestClockInTime : undefined,
+            };
+          })
+        );
+
+        // Filter out null entries (employees with no activity)
+        const filteredIndividualEmployees = individualEmployees.filter((emp) => emp !== null);
+
+        app.logger.info(
+          { userId: session.user.id, crewCount: dashboardData.length, individualCount: filteredIndividualEmployees.length },
+          'Dashboard data fetched'
+        );
+
+        return {
+          crews: dashboardData,
+          individualEmployees: filteredIndividualEmployees,
+        };
       } catch (error) {
         app.logger.error({ err: error, userId: session.user.id }, 'Failed to fetch dashboard');
         throw error;
