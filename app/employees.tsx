@@ -213,47 +213,69 @@ export default function EmployeesScreen() {
         <View style={styles.addSection}>
           <Text style={styles.sectionTitle}>Add New Employee</Text>
           
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter employee name"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            placeholderTextColor="rgba(255, 255, 255, 0.5)"
+            value={name}
+            onChangeText={setName}
+          />
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter email address"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
+          {isCrewLeader ? (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={username}
+                onChangeText={setUsername}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </>
+          ) : (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Phone"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+              <ScrollView horizontal style={styles.crewTagsContainer}>
+                {crews.map(c => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.tag, crewId === c.id && styles.tagOn]}
+                    onPress={() => setCrewId(crewId === c.id ? null : c.id)}
+                  >
+                    <Text style={{color: '#fff'}}>{c.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
 
           <TouchableOpacity
-            style={styles.checkboxContainer}
+            style={styles.toggle}
             onPress={() => setIsCrewLeader(!isCrewLeader)}
           >
-            <View style={[styles.checkbox, isCrewLeader && styles.checkboxChecked]}>
-              {isCrewLeader && (
-                <IconSymbol
-                  ios_icon_name="checkmark"
-                  android_material_icon_name="check"
-                  size={18}
-                  color="#ffffff"
-                />
-              )}
-            </View>
-            <Text style={styles.checkboxLabel}>{crewLeaderText}</Text>
+            <Text style={{color: '#fff'}}>Crew Leader</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -385,15 +407,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 16,
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 8,
-  },
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
@@ -403,29 +416,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#ffffff',
+    marginBottom: 12,
   },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
+  crewTagsContainer: {
+    marginBottom: 12,
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+  tag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
   },
-  checkboxChecked: {
+  tagOn: {
     backgroundColor: colors.crewLeadPrimary,
-    borderColor: colors.crewLeadPrimary,
   },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#ffffff',
+  toggle: {
+    backgroundColor: colors.crewLeadPrimary,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   addButton: {
     backgroundColor: colors.crewLeadPrimary,
