@@ -113,7 +113,8 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       console.log('[Auth] Navigating now');
-      router.replace('/');
+      // Navigate using the root path explicitly
+      router.push('/', { replace: true } as any);
       
       console.log('[Auth] Navigation called');
     }
