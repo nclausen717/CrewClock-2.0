@@ -515,4 +515,100 @@ export function registerEmployeeRoutes(app: App) {
       }
     }
   );
+
+  /**
+   * PUT /api/employees/:id/reset-password
+   * Reset password for a crew leader (admin only)
+   */
+  app.fastify.put(
+    '/api/employees/:id/reset-password',
+    {
+      schema: {
+        description: 'Reset password for a crew leader',
+        tags: ['employees'],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              generatedPassword: { type: 'string' },
+            },
+          },
+          400: { type: 'object', properties: { error: { type: 'string' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const session = await requireAuthWithRole(app, request, reply);
+      if (!session) return;
+
+      const { id } = request.params as { id: string };
+
+      app.logger.info({ userId: session.user.id, employeeId: id }, 'Resetting crew leader password');
+
+      try {
+        // Only admins can reset passwords
+        if (session.user.role !== 'admin') {
+          app.logger.warn({ userId: session.user.id }, 'Non-admin user attempted to reset password');
+          return reply.status(403).send({ error: 'Forbidden' });
+        }
+
+        // Get existing employee
+        const existingEmployees = await app.db
+          .select()
+          .from(employees)
+          .where(eq(employees.id, id));
+
+        if (existingEmployees.length === 0) {
+          app.logger.warn({ employeeId: id }, 'Employee not found for password reset');
+          return reply.status(404).send({ error: 'Employee not found' });
+        }
+
+        const existingEmployee = existingEmployees[0];
+
+        // Check if employee is a crew leader
+        if (!existingEmployee.isCrewLeader) {
+          app.logger.warn({ employeeId: id }, 'Password reset attempted on non-crew-leader');
+          return reply.status(400).send({ error: 'Only crew leaders can have their password reset' });
+        }
+
+        // Check authorization: admin can only reset if they created the employee
+        const isAdminOwner = existingEmployee.createdBy === session.user.id;
+
+        if (!isAdminOwner) {
+          app.logger.warn({ userId: session.user.id, employeeId: id }, 'Unauthorized password reset attempt');
+          return reply.status(403).send({ error: 'Forbidden' });
+        }
+
+        // Generate new password
+        const newPassword = generatePassword();
+        const { hashPassword } = await import('better-auth/crypto');
+        const hashedPassword = await hashPassword(newPassword);
+
+        // Update password in account table
+        await app.db
+          .update(account)
+          .set({ password: hashedPassword })
+          .where(eq(account.userId, id));
+
+        app.logger.info({ userId: session.user.id, employeeId: id }, 'Crew leader password reset successfully');
+
+        return {
+          generatedPassword: newPassword,
+        };
+      } catch (error) {
+        app.logger.error({ err: error, userId: session.user.id, employeeId: id }, 'Failed to reset crew leader password');
+        throw error;
+      }
+    }
+  );
 }
