@@ -45,6 +45,7 @@ export default function EmployeesScreen() {
   // New state variables
   const [phone, setPhone] = useState('');
   const [crewId, setCrewId] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [crews, setCrews] = useState<Array<{id: string; name: string}>>([]);
 
@@ -95,52 +96,45 @@ export default function EmployeesScreen() {
 
   const handleAddEmployee = async () => {
     if (!name.trim()) {
-      showModal('Error', 'Please enter a name', 'warning');
+      showModal('Error', 'Enter name', 'warning');
       return;
     }
-    if (isCrewLeader && !email) {
-      showModal('Error', 'Email is required for crew leaders', 'warning');
+    if (isCrewLeader && !email.trim()) {
+      showModal('Error', 'Email required for crew leaders', 'warning');
       return;
+    }
+    if (isCrewLeader) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showModal('Error', 'Valid email required', 'warning');
+        return;
+      }
     }
 
     setAddingEmployee(true);
     try {
-      const body: any = {name, isCrewLeader};
+      const body: any = {name: name.trim(), isCrewLeader};
       if (isCrewLeader) {
-        body.email = email;
-        if (password) {
-          body.password = password;
-        }
+        body.email = email.trim();
       } else {
         body.phone = phone || null;
         body.crewId = crewId || null;
       }
       
-      console.log('[API] Creating employee with body:', { ...body, password: body.password ? '***' : undefined });
-      const response = await authenticatedPost<{
-        id: string;
-        name: string;
-        email: string | null;
-        isCrewLeader: boolean;
-        generatedPassword: string | null;
-      }>('/api/employees', body);
+      console.log('[API] Creating employee with body:', body);
+      const response = await authenticatedPost<{employee: Employee; generatedPassword?: string}>('/api/employees', body);
       
       console.log('[API] Employee created:', response);
       
-      // Show success message with credentials
-      if (isCrewLeader) {
-        const displayPassword = response.generatedPassword || password;
-        showModal(
-          'Crew Leader Created',
-          `Employee "${name}" has been created.\n\nEmail: ${email}\nPassword: ${displayPassword}\n\nPlease save these credentials securely.`,
-          'success'
-        );
+      if (response.generatedPassword) {
+        showModal('Success', `Crew leader created\n\nPassword: ${response.generatedPassword}`, 'success');
       } else {
-        showModal('Success', `Employee "${name}" added successfully`, 'success');
+        showModal('Success', `"${name}" added`, 'success');
       }
       
       setName('');
       setEmail('');
+      setUsername('');
       setPassword('');
       setPhone('');
       setCrewId(null);
@@ -148,7 +142,7 @@ export default function EmployeesScreen() {
       fetchEmployees();
     } catch (error: any) {
       console.error('[API] Failed to create employee:', error);
-      showModal('Error', error?.message || 'Failed to add employee', 'error');
+      showModal('Error', error?.message || 'Failed', 'error');
     } finally {
       setAddingEmployee(false);
     }
@@ -209,7 +203,7 @@ export default function EmployeesScreen() {
             <>
               <TextInput
                 style={styles.input}
-                placeholder="Email (required)"
+                placeholder="Email"
                 placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={email}
                 onChangeText={setEmail}
@@ -218,16 +212,21 @@ export default function EmployeesScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Password (optional - auto-generated if empty)"
+                placeholder="Username"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
                 placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 autoCapitalize="none"
               />
-              <Text style={styles.helperText}>
-                💡 Leave password empty to auto-generate a secure password
-              </Text>
             </>
           ) : (
             <>
