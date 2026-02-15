@@ -22,11 +22,13 @@ export default function HomeScreen() {
     );
   }
 
-  // If no user, show loading state briefly before redirecting
+  // If no user, show loading briefly then return null
   if (!user) {
+    console.log('[HomeScreen] User is null, should redirect...');
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
+        <Text style={{color: '#fff', marginTop: 10}}>Redirecting...</Text>
       </View>
     );
   }
