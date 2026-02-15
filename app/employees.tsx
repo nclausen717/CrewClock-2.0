@@ -103,6 +103,13 @@ export default function EmployeesScreen() {
       showModal('Error', 'Email required for crew leaders', 'warning');
       return;
     }
+    if (isCrewLeader) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showModal('Error', 'Valid email required', 'warning');
+        return;
+      }
+    }
 
     setAddingEmployee(true);
     try {
@@ -118,7 +125,7 @@ export default function EmployeesScreen() {
       const response = await authenticatedPost<{employee: Employee; generatedPassword?: string}>('/api/employees', body);
       
       if (response.generatedPassword) {
-        showModal('Success', `Crew leader "${name}" created\n\nGenerated Password: ${response.generatedPassword}`, 'success');
+        showModal('Success', `Crew leader "${name}" created!\n\nGenerated Password: ${response.generatedPassword}\n\nShare this password with the crew leader.`, 'success');
       } else {
         showModal('Success', `"${name}" added successfully`, 'success');
       }
