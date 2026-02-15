@@ -195,14 +195,19 @@ export default function ReportsScreen() {
   };
 
   const handleExportCSV = async () => {
-    console.log('User tapped Export CSV button', { employeeId: selectedEmployeeId });
+    console.log('🔵 User clicked Export CSV button');
+    console.log('🔵 Platform:', Platform.OS);
+    console.log('🔵 Report data exists:', !!reportData);
+    console.log('🔵 Selected employee ID:', selectedEmployeeId);
     
     if (!reportData) {
+      console.log('⚠️ No report data available - showing warning modal');
       showModal('No Report', 'Please generate a report first.', 'warning');
       return;
     }
 
     setLoading(true);
+    console.log('🔵 Starting CSV export process...');
 
     try {
       let endpoint = '';
@@ -225,10 +230,13 @@ export default function ReportsScreen() {
         filename = `monthly-report-${year}-${String(month).padStart(2, '0')}.csv`;
       }
 
-      console.log('[API] Downloading CSV from:', endpoint);
+      console.log('🔵 CSV endpoint:', endpoint);
+      console.log('🔵 CSV filename:', filename);
       
       const token = await getToken();
       const url = `${BACKEND_URL}${endpoint}`;
+      
+      console.log('🔵 Fetching CSV from:', url);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -237,39 +245,60 @@ export default function ReportsScreen() {
         },
       });
 
+      console.log('🔵 CSV response status:', response.status);
+
       if (!response.ok) {
         throw new Error(`Failed to download CSV: ${response.status}`);
       }
 
       const csvContent = await response.text();
+      console.log('🔵 CSV content length:', csvContent.length, 'characters');
+      console.log('🔵 CSV preview (first 200 chars):', csvContent.substring(0, 200));
 
       if (Platform.OS === 'web') {
+        console.log('🌐 Web platform detected - initiating browser download');
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const blobUrl = URL.createObjectURL(blob);
+        console.log('🌐 Blob URL created:', blobUrl);
+        
         const link = document.createElement('a');
         link.href = blobUrl;
         link.download = filename;
         document.body.appendChild(link);
+        console.log('🌐 Download link added to DOM, triggering click...');
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
+        console.log('✅ Web download complete - file should be downloading to browser');
         showModal('Export Successful', `Report exported as ${filename}`, 'success');
       } else {
+        console.log('📱 Native platform detected - saving to file system');
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
-        await FileSystem.writeAsStringAsync(fileUri, csvContent);
+        console.log('📱 File URI:', fileUri);
         
-        if (await Sharing.isAvailableAsync()) {
+        await FileSystem.writeAsStringAsync(fileUri, csvContent);
+        console.log('📱 File written successfully');
+        
+        const sharingAvailable = await Sharing.isAvailableAsync();
+        console.log('📱 Sharing available:', sharingAvailable);
+        
+        if (sharingAvailable) {
+          console.log('📱 Opening share dialog...');
           await Sharing.shareAsync(fileUri);
+          console.log('✅ Share dialog opened successfully');
           showModal('Export Successful', `Report exported as ${filename}`, 'success');
         } else {
+          console.log('⚠️ Sharing not available - file saved to:', fileUri);
           showModal('Export Complete', `Report saved to ${fileUri}`, 'success');
         }
       }
     } catch (error: any) {
-      console.error('[API] Error exporting CSV:', error);
+      console.error('❌ Error exporting CSV:', error);
+      console.error('❌ Error details:', error.message, error.stack);
       showModal('Export Failed', error.message || 'Failed to export CSV. Please try again.', 'error');
     } finally {
       setLoading(false);
+      console.log('🔵 CSV export process complete');
     }
   };
 
