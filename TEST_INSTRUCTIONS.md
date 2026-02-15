@@ -43,7 +43,7 @@
 6. ✅ Verify stats show: "4 Total Employees", "0 Crew Leaders", "4 Workers"
 7. ✅ Each employee card should show name and "Worker" badge
 
-#### 1.3 Add Crew Leader Employee
+#### 1.3 Add Crew Leader Employee (with Custom Password)
 
 **Steps:**
 1. Tap "Add Employee" button
@@ -51,11 +51,31 @@
    - Name: John Crew Lead
    - Check "Designate as Crew Leader"
    - Email: crewlead@test.com
+   - Password: CrewLead123! (custom password)
+3. ✅ Should see helper text: "💡 Leave password empty to auto-generate a secure password"
+4. Tap "Add Employee"
+5. ✅ Should see success modal with the password you entered:
+   - "Crew Leader Created"
+   - "Employee 'John Crew Lead' has been created."
+   - "Email: crewlead@test.com"
+   - "Password: CrewLead123!"
+   - "Please save these credentials securely."
+6. ✅ Verify stats now show: "5 Total Employees", "1 Crew Leaders", "4 Workers"
+7. ✅ John Crew Lead card should show email and "Crew Leader" badge (orange color)
+
+#### 1.3b Add Crew Leader Employee (with Auto-Generated Password)
+
+**Steps:**
+1. Tap "Add Employee" button
+2. Fill in:
+   - Name: Sarah Crew Lead
+   - Check "Designate as Crew Leader"
+   - Email: sarah@test.com
+   - Password: (leave empty)
 3. Tap "Add Employee"
-4. ✅ Should see success modal with generated password (SAVE THIS PASSWORD!)
+4. ✅ Should see success modal with auto-generated password (SAVE THIS PASSWORD!)
    - Example: "Password: abc123xyz"
-5. ✅ Verify stats now show: "5 Total Employees", "1 Crew Leaders", "4 Workers"
-6. ✅ John Crew Lead card should show email and "Crew Leader" badge (orange color)
+5. ✅ Verify stats now show: "6 Total Employees", "2 Crew Leaders", "4 Workers"
 
 #### 1.4 Delete Employee
 
@@ -113,7 +133,7 @@
 1. From Welcome screen, tap "Crew Lead Login"
 2. Enter credentials:
    - Email: crewlead@test.com
-   - Password: [Use the password from step 1.3]
+   - Password: CrewLead123! (the custom password from step 1.3)
 3. Tap "Login"
 4. ✅ Should be redirected to home screen
 5. ✅ Verify "Welcome, John Crew Lead!" with Crew Lead badge (orange color)
@@ -381,9 +401,11 @@ Example logs you should see:
 - Email: admin@test.com
 - Password: Admin123!
 
-**Crew Leader Account:**
+**Crew Leader Accounts:**
 - Email: crewlead@test.com
-- Password: [Generated during employee creation]
+- Password: CrewLead123! (custom password set during creation)
+- Email: sarah@test.com
+- Password: [Auto-generated during employee creation - check success modal]
 
 **Employees:**
 - James Smith (Worker)

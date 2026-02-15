@@ -193,6 +193,105 @@ await register('user@test.com', 'password', 'John Doe', 'admin');
 await logout();
 ```
 
+## Employee Management Endpoints (Admin Only)
+
+### 1. Get All Employees
+**GET** `/api/employees`
+
+**Headers:**
+```
+Authorization: Bearer {admin-token}
+```
+
+**Response (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "isCrewLeader": true,
+    "createdAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "uuid",
+    "name": "Jane Smith",
+    "email": null,
+    "isCrewLeader": false,
+    "createdAt": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+### 2. Create Employee
+**POST** `/api/employees`
+
+**Headers:**
+```
+Authorization: Bearer {admin-token}
+```
+
+**Request Body (Regular Employee):**
+```json
+{
+  "name": "Jane Smith",
+  "isCrewLeader": false
+}
+```
+
+**Request Body (Crew Leader with Custom Password):**
+```json
+{
+  "name": "John Doe",
+  "isCrewLeader": true,
+  "email": "john@example.com",
+  "password": "CustomPass123!"
+}
+```
+
+**Request Body (Crew Leader with Auto-Generated Password):**
+```json
+{
+  "name": "John Doe",
+  "isCrewLeader": true,
+  "email": "john@example.com"
+}
+```
+
+**Response (201):**
+```json
+{
+  "id": "uuid",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "isCrewLeader": true,
+  "generatedPassword": "aB3xY9zQ"
+}
+```
+
+**Notes:**
+- `password` field is optional
+- If `password` is provided, it will be used as the crew leader's password
+- If `password` is NOT provided (or empty), a secure password will be auto-generated
+- The password (custom or generated) is returned in `generatedPassword` field
+- For regular employees (isCrewLeader=false), no password is needed
+- Email is required for crew leaders
+
+### 3. Delete Employee
+**DELETE** `/api/employees/:id`
+
+**Headers:**
+```
+Authorization: Bearer {admin-token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true
+}
+```
+
 ## Token Management
 
 Tokens are stored in AsyncStorage with key: `@crewclock_auth_token`

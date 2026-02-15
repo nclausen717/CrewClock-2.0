@@ -45,7 +45,6 @@ export default function EmployeesScreen() {
   // New state variables
   const [phone, setPhone] = useState('');
   const [crewId, setCrewId] = useState<string | null>(null);
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [crews, setCrews] = useState<Array<{id: string; name: string}>>([]);
 
@@ -96,11 +95,11 @@ export default function EmployeesScreen() {
 
   const handleAddEmployee = async () => {
     if (!name.trim()) {
-      showModal('Error', 'Enter name', 'warning');
+      showModal('Error', 'Please enter a name', 'warning');
       return;
     }
-    if (isCrewLeader && (!email || !username || !password)) {
-      showModal('Error', 'Email, username, password required', 'warning');
+    if (isCrewLeader && !email) {
+      showModal('Error', 'Email is required for crew leaders', 'warning');
       return;
     }
 
@@ -109,25 +108,47 @@ export default function EmployeesScreen() {
       const body: any = {name, isCrewLeader};
       if (isCrewLeader) {
         body.email = email;
-        body.username = username;
-        body.password = password;
+        if (password) {
+          body.password = password;
+        }
       } else {
         body.phone = phone || null;
         body.crewId = crewId || null;
       }
       
-      await authenticatedPost('/api/employees', body);
-      showModal('Success', `"${name}" added`, 'success');
+      console.log('[API] Creating employee with body:', { ...body, password: body.password ? '***' : undefined });
+      const response = await authenticatedPost<{
+        id: string;
+        name: string;
+        email: string | null;
+        isCrewLeader: boolean;
+        generatedPassword: string | null;
+      }>('/api/employees', body);
+      
+      console.log('[API] Employee created:', response);
+      
+      // Show success message with credentials
+      if (isCrewLeader) {
+        const displayPassword = response.generatedPassword || password;
+        showModal(
+          'Crew Leader Created',
+          `Employee "${name}" has been created.\n\nEmail: ${email}\nPassword: ${displayPassword}\n\nPlease save these credentials securely.`,
+          'success'
+        );
+      } else {
+        showModal('Success', `Employee "${name}" added successfully`, 'success');
+      }
+      
       setName('');
       setEmail('');
-      setUsername('');
       setPassword('');
       setPhone('');
       setCrewId(null);
       setIsCrewLeader(false);
       fetchEmployees();
     } catch (error: any) {
-      showModal('Error', error?.message || 'Failed', 'error');
+      console.error('[API] Failed to create employee:', error);
+      showModal('Error', error?.message || 'Failed to add employee', 'error');
     } finally {
       setAddingEmployee(false);
     }
@@ -188,27 +209,25 @@ export default function EmployeesScreen() {
             <>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Email (required)"
                 placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
+                autoCapitalize="none"
               />
               <TextInput
                 style={styles.input}
-                placeholder="Username"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                value={username}
-                onChangeText={setUsername}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
+                placeholder="Password (optional - auto-generated if empty)"
                 placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                autoCapitalize="none"
               />
+              <Text style={styles.helperText}>
+                💡 Leave password empty to auto-generate a secure password
+              </Text>
             </>
           ) : (
             <>
@@ -380,6 +399,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     marginBottom: 12,
+  },
+  helperText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginTop: -8,
+    marginBottom: 12,
+    fontStyle: 'italic',
   },
   crewTagsContainer: {
     marginBottom: 12,
