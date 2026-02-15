@@ -29,6 +29,7 @@ export function registerTimeEntriesRoutes(app: App) {
             },
           },
           401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
     },
@@ -39,6 +40,12 @@ export function registerTimeEntriesRoutes(app: App) {
       app.logger.info({ userId: session.user.id }, 'Fetching employees for clock-in');
 
       try {
+        // Only crew leaders can access this endpoint
+        if (session.user.role !== 'crew_lead') {
+          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'Non-crew-leader attempted to access clock-in employee list');
+          return reply.status(403).send({ error: 'Only crew leaders can clock in employees' });
+        }
+
         // Get all non-crew-leader employees
         const regularEmployees = await app.db
           .select({
@@ -382,6 +389,202 @@ export function registerTimeEntriesRoutes(app: App) {
         return activeEntries;
       } catch (error) {
         app.logger.error({ err: error, userId: session.user.id }, 'Failed to fetch active entries');
+        throw error;
+      }
+    }
+  );
+
+  /**
+   * POST /api/time-entries/clock-in-self
+   * Clock in the authenticated crew leader
+   */
+  app.fastify.post(
+    '/api/time-entries/clock-in-self',
+    {
+      schema: {
+        description: 'Clock in the authenticated crew leader',
+        tags: ['time-tracking'],
+        body: {
+          type: 'object',
+          required: ['jobSiteId'],
+          properties: {
+            jobSiteId: { type: 'string' },
+            workDescription: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              timeEntry: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  userId: { type: 'string' },
+                  jobSiteId: { type: 'string' },
+                  clockInTime: { type: 'string' },
+                  clockOutTime: { type: ['string', 'null'] },
+                  workDescription: { type: ['string', 'null'] },
+                },
+              },
+            },
+          },
+          400: { type: 'object', properties: { error: { type: 'string' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const session = await requireAuthWithRole(app, request, reply);
+      if (!session) return;
+
+      const { jobSiteId, workDescription } = request.body as {
+        jobSiteId: string;
+        workDescription?: string;
+      };
+
+      app.logger.info({ userId: session.user.id, jobSiteId }, 'Crew leader clocking in');
+
+      try {
+        // Only crew leads can clock in themselves
+        if (session.user.role !== 'crew_lead') {
+          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'Non-crew-leader attempted self clock-in');
+          return reply.status(403).send({ error: 'Only crew leaders can clock in' });
+        }
+
+        // Validate job site exists
+        const sites = await app.db.select().from(jobSites).where(eq(jobSites.id, jobSiteId));
+
+        if (sites.length === 0) {
+          app.logger.warn({ jobSiteId }, 'Job site not found');
+          return reply.status(400).send({ error: 'Job site not found' });
+        }
+
+        // Create clock-in entry
+        const now = new Date();
+
+        const [entry] = await app.db
+          .insert(timeEntries)
+          .values({
+            employeeId: session.user.id,
+            jobSiteId,
+            clockInTime: now,
+            clockedInBy: session.user.id,
+            workDescription: workDescription || null,
+          })
+          .returning();
+
+        app.logger.info({ userId: session.user.id, entryId: entry.id }, 'Crew leader clocked in successfully');
+
+        return {
+          success: true,
+          timeEntry: {
+            id: entry.id,
+            userId: entry.employeeId,
+            jobSiteId: entry.jobSiteId,
+            clockInTime: entry.clockInTime,
+            clockOutTime: entry.clockOutTime,
+            workDescription: entry.workDescription,
+          },
+        };
+      } catch (error) {
+        app.logger.error({ err: error, userId: session.user.id, jobSiteId }, 'Failed to clock in crew leader');
+        throw error;
+      }
+    }
+  );
+
+  /**
+   * POST /api/time-entries/clock-out-self
+   * Clock out the authenticated crew leader
+   */
+  app.fastify.post(
+    '/api/time-entries/clock-out-self',
+    {
+      schema: {
+        description: 'Clock out the authenticated crew leader',
+        tags: ['time-tracking'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              timeEntry: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  userId: { type: 'string' },
+                  jobSiteId: { type: 'string' },
+                  clockInTime: { type: 'string' },
+                  clockOutTime: { type: 'string' },
+                  workDescription: { type: ['string', 'null'] },
+                },
+              },
+            },
+          },
+          400: { type: 'object', properties: { error: { type: 'string' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const session = await requireAuthWithRole(app, request, reply);
+      if (!session) return;
+
+      app.logger.info({ userId: session.user.id }, 'Crew leader clocking out');
+
+      try {
+        // Only crew leads can clock out themselves
+        if (session.user.role !== 'crew_lead') {
+          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'Non-crew-leader attempted self clock-out');
+          return reply.status(403).send({ error: 'Only crew leaders can clock out' });
+        }
+
+        // Find active time entry for this crew leader
+        const activeEntries = await app.db
+          .select()
+          .from(timeEntries)
+          .where(
+            and(
+              eq(timeEntries.employeeId, session.user.id),
+              isNull(timeEntries.clockOutTime)
+            )
+          );
+
+        if (activeEntries.length === 0) {
+          app.logger.warn({ userId: session.user.id }, 'No active clock-in found for crew leader');
+          return reply.status(400).send({ error: 'No active clock-in found' });
+        }
+
+        // Update the time entry with clock-out time
+        const now = new Date();
+
+        const [updatedEntry] = await app.db
+          .update(timeEntries)
+          .set({
+            clockOutTime: now,
+          })
+          .where(eq(timeEntries.id, activeEntries[0].id))
+          .returning();
+
+        app.logger.info({ userId: session.user.id, entryId: updatedEntry.id }, 'Crew leader clocked out successfully');
+
+        return {
+          success: true,
+          timeEntry: {
+            id: updatedEntry.id,
+            userId: updatedEntry.employeeId,
+            jobSiteId: updatedEntry.jobSiteId,
+            clockInTime: updatedEntry.clockInTime,
+            clockOutTime: updatedEntry.clockOutTime,
+            workDescription: updatedEntry.workDescription,
+          },
+        };
+      } catch (error) {
+        app.logger.error({ err: error, userId: session.user.id }, 'Failed to clock out crew leader');
         throw error;
       }
     }
