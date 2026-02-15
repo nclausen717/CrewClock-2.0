@@ -9,13 +9,15 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { authenticatedGet, authenticatedPost, authenticatedDelete } from '@/utils/api';
+import { authenticatedGet, authenticatedPost, authenticatedDelete, authenticatedPut } from '@/utils/api';
 import { Modal } from '@/components/ui/Modal';
+import * as Clipboard from 'expo-clipboard';
 
 interface Employee {
   id: string;
@@ -42,6 +44,14 @@ export default function EmployeesScreen() {
     confirmText: 'OK',
   });
 
+  // Password modal state
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [generatedPasswordData, setGeneratedPasswordData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+
   // New state variables
   const [phone, setPhone] = useState('');
   const [crewId, setCrewId] = useState<string | null>(null);
@@ -58,6 +68,16 @@ export default function EmployeesScreen() {
   ) => {
     setModalConfig({ title, message, type, onConfirm, confirmText });
     setModalVisible(true);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Copied!', 'Password copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      Alert.alert('Error', 'Failed to copy password');
+    }
   };
 
   const fetchEmployees = useCallback(async () => {
@@ -125,7 +145,13 @@ export default function EmployeesScreen() {
       const response = await authenticatedPost<{employee: Employee; generatedPassword?: string}>('/api/employees', body);
       
       if (response.generatedPassword) {
-        showModal('Success', `Crew leader "${name}" created!\n\nGenerated Password: ${response.generatedPassword}\n\nShare this password with the crew leader.`, 'success');
+        // Show password in special modal with copy button
+        setGeneratedPasswordData({
+          name: name.trim(),
+          email: email.trim(),
+          password: response.generatedPassword,
+        });
+        setPasswordModalVisible(true);
       } else {
         showModal('Success', `"${name}" added successfully`, 'success');
       }
@@ -143,6 +169,40 @@ export default function EmployeesScreen() {
     } finally {
       setAddingEmployee(false);
     }
+  };
+
+  const handleResetPassword = (employeeId: string, employeeName: string, employeeEmail: string) => {
+    console.log('[API] User tapped reset password for:', employeeName);
+    
+    showModal(
+      'Reset Password',
+      `Generate a new password for "${employeeName}"? The old password will no longer work.`,
+      'warning',
+      async () => {
+        setModalVisible(false);
+        
+        try {
+          // Call backend to reset password
+          const response = await authenticatedPut<{generatedPassword: string}>(
+            `/api/employees/${employeeId}/reset-password`,
+            {}
+          );
+          
+          // Show new password
+          setGeneratedPasswordData({
+            name: employeeName,
+            email: employeeEmail,
+            password: response.generatedPassword,
+          });
+          setPasswordModalVisible(true);
+        } catch (error: any) {
+          console.error('[API] Failed to reset password:', error);
+          const errorMessage = error?.message || error?.toString() || 'Failed to reset password. Please try again.';
+          showModal('Error', errorMessage, 'error');
+        }
+      },
+      'Reset Password'
+    );
   };
 
   const handleDeleteEmployee = (employeeId: string, employeeName: string) => {
@@ -185,6 +245,20 @@ export default function EmployeesScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Info Banner */}
+        <View style={styles.infoBanner}>
+          <IconSymbol
+            ios_icon_name="info.circle.fill"
+            android_material_icon_name="info"
+            size={20}
+            color={colors.crewLeadPrimary}
+            style={styles.infoBannerIcon}
+          />
+          <Text style={styles.infoBannerText}>
+            Crew leaders receive an auto-generated password. Make sure to save it when displayed!
+          </Text>
+        </View>
+
         <View style={styles.addSection}>
           <Text style={styles.sectionTitle}>Add New Employee</Text>
           
@@ -207,23 +281,9 @@ export default function EmployeesScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-              />
+              <Text style={styles.helperText}>
+                🔐 A secure password will be auto-generated for the crew leader
+              </Text>
             </>
           ) : (
             <>
@@ -253,7 +313,9 @@ export default function EmployeesScreen() {
             style={styles.toggle}
             onPress={() => setIsCrewLeader(!isCrewLeader)}
           >
-            <Text style={{color: '#fff'}}>Crew Leader</Text>
+            <Text style={{color: '#fff'}}>
+              {isCrewLeader ? '✓ Crew Leader' : 'Regular Employee'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -330,17 +392,32 @@ export default function EmployeesScreen() {
                       </View>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteEmployee(employee.id, employee.name)}
-                  >
-                    <IconSymbol
-                      ios_icon_name="trash.fill"
-                      android_material_icon_name="delete"
-                      size={20}
-                      color={colors.error}
-                    />
-                  </TouchableOpacity>
+                  <View style={styles.employeeActions}>
+                    {employee.isCrewLeader && employee.email && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleResetPassword(employee.id, employee.name, employee.email!)}
+                      >
+                        <IconSymbol
+                          ios_icon_name="key.fill"
+                          android_material_icon_name="vpn-key"
+                          size={20}
+                          color={colors.crewLeadPrimary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleDeleteEmployee(employee.id, employee.name)}
+                    >
+                      <IconSymbol
+                        ios_icon_name="trash.fill"
+                        android_material_icon_name="delete"
+                        size={20}
+                        color={colors.error}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               );
             })
@@ -348,6 +425,20 @@ export default function EmployeesScreen() {
         </View>
       </ScrollView>
 
+      {/* Password Display Modal */}
+      <Modal
+        visible={passwordModalVisible}
+        title="🔑 Crew Leader Password"
+        message={`Crew Leader: ${generatedPasswordData.name}\nEmail: ${generatedPasswordData.email}\n\n⚠️ IMPORTANT: Save this password!\n\nGenerated Password:\n${generatedPasswordData.password}\n\nShare this password with the crew leader. They can use it to log in from the main page under "Crew Leader Login".`}
+        type="success"
+        onClose={() => setPasswordModalVisible(false)}
+        confirmText="Copy Password"
+        onConfirm={() => {
+          copyToClipboard(generatedPasswordData.password);
+        }}
+      />
+
+      {/* Regular Modal */}
       <Modal
         visible={modalVisible}
         title={modalConfig.title}
@@ -370,6 +461,25 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+  infoBanner: {
+    backgroundColor: `${colors.crewLeadPrimary}20`,
+    borderWidth: 1,
+    borderColor: colors.crewLeadPrimary,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  infoBannerIcon: {
+    marginRight: 12,
+  },
+  infoBannerText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#ffffff',
+    lineHeight: 20,
   },
   addSection: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -398,7 +508,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#FFD700',
     marginTop: -8,
     marginBottom: 12,
     fontStyle: 'italic',
@@ -503,7 +613,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  deleteButton: {
+  employeeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
+    marginLeft: 4,
   },
 });
