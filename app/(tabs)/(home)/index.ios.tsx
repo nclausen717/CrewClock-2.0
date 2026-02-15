@@ -22,9 +22,13 @@ export default function HomeScreen() {
     );
   }
 
-  // If no user, return null and let AuthContext handle redirect
+  // If no user, show loading state briefly before redirecting
   if (!user) {
-    return null;
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
+      </View>
+    );
   }
 
   const getRoleColor = () => {
