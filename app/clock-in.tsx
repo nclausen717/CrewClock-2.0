@@ -148,7 +148,6 @@ export default function ClockInScreen() {
       setShowJobSiteModal(false);
       setIsSelfClockIn(false);
       
-      // Refresh data to update UI
       await fetchData();
     } catch (error: any) {
       console.error('[API] Error self clocking in:', error);
@@ -166,8 +165,12 @@ export default function ClockInScreen() {
       return;
     }
 
-    setIsSelfClockIn(false);
-    setShowJobSiteModal(true);
+    if (!selectedJobSite) {
+      showModal('No Job Site Selected', 'Please select a job site first', 'warning');
+      return;
+    }
+
+    confirmClockIn();
   };
 
   const confirmClockIn = async () => {
@@ -229,9 +232,20 @@ export default function ClockInScreen() {
     }
   };
 
+  const handleJobSiteSelect = () => {
+    console.log('User tapped Select Job Site button');
+    
+    if (jobSites.length === 0) {
+      showModal('No Job Sites', 'Please create a job site first', 'warning');
+      return;
+    }
+
+    setIsSelfClockIn(false);
+    setShowJobSiteModal(true);
+  };
+
   const selectedCount = selectedEmployees.size;
   const selectedSite = jobSites.find(site => site.id === selectedJobSite);
-  const currentUserEmployee = employees.find(emp => emp.name === user?.name);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -252,7 +266,6 @@ export default function ClockInScreen() {
         </View>
       ) : (
         <>
-          {/* Self Clock-In Button */}
           <View style={styles.selfClockInContainer}>
             <TouchableOpacity
               style={styles.selfClockInButton}
@@ -285,6 +298,37 @@ export default function ClockInScreen() {
             <Text style={styles.dividerText}>OR CLOCK IN YOUR TEAM</Text>
             <View style={styles.dividerLine} />
           </View>
+
+          <TouchableOpacity
+            style={styles.jobSiteSelector}
+            onPress={handleJobSiteSelect}
+          >
+            <View style={styles.jobSiteSelectorIcon}>
+              <IconSymbol
+                ios_icon_name="location.fill"
+                android_material_icon_name="place"
+                size={24}
+                color={selectedSite ? colors.crewLeadPrimary : '#b0c4de'}
+              />
+            </View>
+            <View style={styles.jobSiteSelectorContent}>
+              <Text style={styles.jobSiteSelectorLabel}>Select Job Site</Text>
+              {selectedSite ? (
+                <React.Fragment>
+                  <Text style={styles.jobSiteSelectorValue}>{selectedSite.name}</Text>
+                  <Text style={styles.jobSiteSelectorLocation}>{selectedSite.location}</Text>
+                </React.Fragment>
+              ) : (
+                <Text style={styles.jobSiteSelectorPlaceholder}>Tap to select a job site</Text>
+              )}
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={24}
+              color="#b0c4de"
+            />
+          </TouchableOpacity>
 
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Select Employees</Text>
@@ -351,9 +395,12 @@ export default function ClockInScreen() {
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.clockInButton, selectedCount === 0 && styles.clockInButtonDisabled]}
+              style={[
+                styles.clockInButton, 
+                (selectedCount === 0 || !selectedJobSite) && styles.clockInButtonDisabled
+              ]}
               onPress={handleClockIn}
-              disabled={selectedCount === 0}
+              disabled={selectedCount === 0 || !selectedJobSite}
             >
               <IconSymbol
                 ios_icon_name="clock.fill"
@@ -408,26 +455,27 @@ export default function ClockInScreen() {
               })}
             </ScrollView>
 
-            <View style={styles.workDescriptionContainer}>
-              <Text style={styles.workDescriptionLabel}>Work Description (Optional)</Text>
-              <TextInput
-                style={styles.workDescriptionInput}
-                placeholder="Describe the work being done today..."
-                placeholderTextColor="#b0c4de"
-                value={workDescription}
-                onChangeText={setWorkDescription}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
+            {isSelfClockIn && (
+              <View style={styles.workDescriptionContainer}>
+                <Text style={styles.workDescriptionLabel}>Work Description (Optional)</Text>
+                <TextInput
+                  style={styles.workDescriptionInput}
+                  placeholder="Describe the work being done today..."
+                  placeholderTextColor="#b0c4de"
+                  value={workDescription}
+                  onChangeText={setWorkDescription}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+            )}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setShowJobSiteModal(false);
-                  setSelectedJobSite(null);
                   setIsSelfClockIn(false);
                 }}
                 disabled={submitting || selfClockingIn}
@@ -437,13 +485,21 @@ export default function ClockInScreen() {
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton, !selectedJobSite && styles.confirmButtonDisabled]}
-                onPress={isSelfClockIn ? confirmSelfClockIn : confirmClockIn}
+                onPress={() => {
+                  if (isSelfClockIn) {
+                    confirmSelfClockIn();
+                  } else {
+                    setShowJobSiteModal(false);
+                  }
+                }}
                 disabled={!selectedJobSite || submitting || selfClockingIn}
               >
                 {(submitting || selfClockingIn) ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>Confirm Clock In</Text>
+                  <Text style={styles.confirmButtonText}>
+                    {isSelfClockIn ? 'Confirm Clock In' : 'Select'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -531,6 +587,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#b0c4de',
     marginHorizontal: 12,
+  },
+  jobSiteSelector: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  jobSiteSelectorIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  jobSiteSelectorContent: {
+    flex: 1,
+  },
+  jobSiteSelectorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#b0c4de',
+    marginBottom: 4,
+  },
+  jobSiteSelectorValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
+  },
+  jobSiteSelectorLocation: {
+    fontSize: 13,
+    color: '#b0c4de',
+  },
+  jobSiteSelectorPlaceholder: {
+    fontSize: 14,
+    color: '#b0c4de',
+    fontStyle: 'italic',
   },
   header: {
     flexDirection: 'row',
