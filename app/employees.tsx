@@ -42,6 +42,13 @@ export default function EmployeesScreen() {
     confirmText: 'OK',
   });
 
+  // New state variables
+  const [phone, setPhone] = useState('');
+  const [crewId, setCrewId] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [crews, setCrews] = useState<Array<{id: string; name: string}>>([]);
+
   const showModal = (
     title: string,
     message: string,
@@ -73,6 +80,19 @@ export default function EmployeesScreen() {
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
+
+  // New useEffect to fetch crews
+  useEffect(() => {
+    const fetchCrews = async () => {
+      try {
+        const response = await authenticatedGet('/api/crews');
+        setCrews(response);
+      } catch (error) {
+        console.error('Failed to fetch crews:', error);
+      }
+    };
+    fetchCrews();
+  }, []);
 
   const handleAddEmployee = async () => {
     console.log('[API] User tapped Add Employee button', { name, email, isCrewLeader });
