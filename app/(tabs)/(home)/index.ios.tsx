@@ -81,7 +81,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.roleBadgeRow}>
             <View style={[styles.roleBadge, { backgroundColor: `${roleColor}20` }]}>
-              <Text style={[styles.roleText, { color: roleColor }]}>{roleDisplay}</Text>
+              <Text style={styles.roleText}>{roleDisplay}</Text>
             </View>
             <TouchableOpacity 
               style={styles.switchRoleButton}
@@ -337,6 +337,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#ffffff',
   },
   switchRoleButton: {
     flexDirection: 'row',
