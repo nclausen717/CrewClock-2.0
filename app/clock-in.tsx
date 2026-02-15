@@ -40,6 +40,7 @@ export default function ClockInScreen() {
   const [showJobSiteModal, setShowJobSiteModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [selfClockingIn, setSelfClockingIn] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     title: '',
@@ -91,6 +92,79 @@ export default function ClockInScreen() {
     setSelectedEmployees(newSelection);
   };
 
+  const handleSelfClockIn = () => {
+    console.log('User tapped Self Clock In button');
+    
+    if (jobSites.length === 0) {
+      showModal('No Job Sites', 'Please create a job site first', 'warning');
+      return;
+    }
+
+    setShowJobSiteModal(true);
+  };
+
+  const confirmSelfClockIn = async () => {
+    if (!selectedJobSite) {
+      showModal('No Job Site Selected', 'Please select a job site', 'warning');
+      return;
+    }
+
+    const currentUserEmployee = employees.find(emp => emp.name === user?.name);
+    
+    if (!currentUserEmployee) {
+      showModal('Error', 'Could not find your employee record', 'error');
+      return;
+    }
+
+    const selectedSite = jobSites.find(site => site.id === selectedJobSite);
+    
+    console.log('[API] Self clocking in at job site:', selectedJobSite);
+    setSelfClockingIn(true);
+
+    try {
+      const requestBody: {
+        employeeIds: string[];
+        jobSiteId: string;
+        workDescription?: string;
+      } = {
+        employeeIds: [currentUserEmployee.id],
+        jobSiteId: selectedJobSite,
+      };
+
+      if (workDescription.trim()) {
+        requestBody.workDescription = workDescription.trim();
+      }
+
+      await authenticatedPost<{
+        success: boolean;
+        entries: {
+          id: string;
+          employeeId: string;
+          jobSiteId: string;
+          clockInTime: string;
+        }[];
+      }>('/api/time-entries/clock-in', requestBody);
+      
+      showModal(
+        'Clock In Successful',
+        `You have been clocked in at ${selectedSite?.name}`,
+        'success'
+      );
+
+      setSelectedJobSite(null);
+      setWorkDescription('');
+      setShowJobSiteModal(false);
+      
+      // Refresh data to update UI
+      await fetchData();
+    } catch (error: any) {
+      console.error('[API] Error self clocking in:', error);
+      showModal('Error', error.message || 'Failed to clock in', 'error');
+    } finally {
+      setSelfClockingIn(false);
+    }
+  };
+
   const handleClockIn = () => {
     console.log('User tapped Clock In button');
     
@@ -124,7 +198,6 @@ export default function ClockInScreen() {
         jobSiteId: selectedJobSite,
       };
 
-      // Add work description if provided
       if (workDescription.trim()) {
         requestBody.workDescription = workDescription.trim();
       }
@@ -164,6 +237,7 @@ export default function ClockInScreen() {
 
   const selectedCount = selectedEmployees.size;
   const selectedSite = jobSites.find(site => site.id === selectedJobSite);
+  const currentUserEmployee = employees.find(emp => emp.name === user?.name);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -184,6 +258,40 @@ export default function ClockInScreen() {
         </View>
       ) : (
         <>
+          {/* Self Clock-In Button */}
+          <View style={styles.selfClockInContainer}>
+            <TouchableOpacity
+              style={styles.selfClockInButton}
+              onPress={handleSelfClockIn}
+              disabled={selfClockingIn}
+            >
+              <View style={styles.selfClockInIcon}>
+                <IconSymbol
+                  ios_icon_name="person.crop.circle.fill"
+                  android_material_icon_name="account-circle"
+                  size={32}
+                  color="#ffffff"
+                />
+              </View>
+              <View style={styles.selfClockInContent}>
+                <Text style={styles.selfClockInTitle}>Clock Yourself In</Text>
+                <Text style={styles.selfClockInSubtitle}>Quick self check-in</Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="clock.fill"
+                android_material_icon_name="access-time"
+                size={24}
+                color="#ffffff"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR CLOCK IN YOUR TEAM</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Select Employees</Text>
             <View style={styles.selectedBadge}>
@@ -259,7 +367,7 @@ export default function ClockInScreen() {
                 size={24}
                 color="#ffffff"
               />
-              <Text style={styles.clockInButtonText}>Clock In ({selectedCount})</Text>
+              <Text style={styles.clockInButtonText}>Clock In Team ({selectedCount})</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -269,7 +377,7 @@ export default function ClockInScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Job Site</Text>
-            <Text style={styles.modalSubtitle}>Choose where the team will be working</Text>
+            <Text style={styles.modalSubtitle}>Choose where you will be working</Text>
 
             <ScrollView style={styles.jobSiteList}>
               {jobSites.map((site) => {
@@ -327,17 +435,17 @@ export default function ClockInScreen() {
                   setShowJobSiteModal(false);
                   setSelectedJobSite(null);
                 }}
-                disabled={submitting}
+                disabled={submitting || selfClockingIn}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton, !selectedJobSite && styles.confirmButtonDisabled]}
-                onPress={confirmClockIn}
-                disabled={!selectedJobSite || submitting}
+                onPress={selfClockingIn ? confirmSelfClockIn : confirmClockIn}
+                disabled={!selectedJobSite || submitting || selfClockingIn}
               >
-                {submitting ? (
+                {(submitting || selfClockingIn) ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
                   <Text style={styles.confirmButtonText}>Confirm Clock In</Text>
@@ -374,11 +482,67 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#b0c4de',
   },
+  selfClockInContainer: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  selfClockInButton: {
+    backgroundColor: colors.success,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  selfClockInIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  selfClockInContent: {
+    flex: 1,
+  },
+  selfClockInTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  selfClockInSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#b0c4de',
+    marginHorizontal: 12,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 0,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },

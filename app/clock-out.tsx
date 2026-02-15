@@ -34,6 +34,7 @@ export default function ClockOutScreen() {
   const [workDescription, setWorkDescription] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [selfClockingOut, setSelfClockingOut] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     title: '',
@@ -80,6 +81,58 @@ export default function ClockOutScreen() {
     setSelectedEmployees(newSelection);
   };
 
+  const handleSelfClockOut = async () => {
+    console.log('User tapped Self Clock Out button');
+    
+    const currentUserEntry = activeEntries.find(entry => entry.employeeName === user?.name);
+    
+    if (!currentUserEntry) {
+      showModal('Not Clocked In', 'You are not currently clocked in', 'warning');
+      return;
+    }
+
+    console.log('[API] Self clocking out');
+    setSelfClockingOut(true);
+
+    try {
+      const requestBody: {
+        employeeIds: string[];
+        workDescription?: string;
+      } = {
+        employeeIds: [currentUserEntry.employeeId],
+      };
+
+      if (workDescription.trim()) {
+        requestBody.workDescription = workDescription.trim();
+      }
+
+      await authenticatedPost<{
+        success: boolean;
+        entries: {
+          id: string;
+          employeeId: string;
+          clockOutTime: string;
+        }[];
+      }>('/api/time-entries/clock-out', requestBody);
+      
+      showModal(
+        'Clock Out Successful',
+        'You have been clocked out successfully',
+        'success'
+      );
+
+      setWorkDescription('');
+      
+      // Refresh the list
+      await fetchActiveEntries();
+    } catch (error: any) {
+      console.error('[API] Error self clocking out:', error);
+      showModal('Error', error.message || 'Failed to clock out', 'error');
+    } finally {
+      setSelfClockingOut(false);
+    }
+  };
+
   const handleClockOut = async () => {
     console.log('User tapped Clock Out button');
     
@@ -105,7 +158,6 @@ export default function ClockOutScreen() {
         employeeIds,
       };
 
-      // Add work description if provided
       if (workDescription.trim()) {
         requestBody.workDescription = workDescription.trim();
       }
@@ -149,7 +201,6 @@ export default function ClockOutScreen() {
         employeeIds: [employeeId],
       };
 
-      // Add work description if provided
       if (workDescription.trim()) {
         requestBody.workDescription = workDescription.trim();
       }
@@ -199,6 +250,9 @@ export default function ClockOutScreen() {
   };
 
   const selectedCount = selectedEmployees.size;
+  const currentUserEntry = activeEntries.find(entry => entry.employeeName === user?.name);
+  const currentUserJobSite = currentUserEntry?.jobSiteName || '';
+  const currentUserHours = currentUserEntry ? getHoursWorked(currentUserEntry.clockInTime) : '';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -219,6 +273,52 @@ export default function ClockOutScreen() {
         </View>
       ) : (
         <>
+          {/* Self Clock-Out Button */}
+          {currentUserEntry && (
+            <View style={styles.selfClockOutContainer}>
+              <TouchableOpacity
+                style={styles.selfClockOutButton}
+                onPress={handleSelfClockOut}
+                disabled={selfClockingOut}
+              >
+                <View style={styles.selfClockOutIcon}>
+                  <IconSymbol
+                    ios_icon_name="person.crop.circle.fill"
+                    android_material_icon_name="account-circle"
+                    size={32}
+                    color="#ffffff"
+                  />
+                </View>
+                <View style={styles.selfClockOutContent}>
+                  <Text style={styles.selfClockOutTitle}>Clock Yourself Out</Text>
+                  <View style={styles.selfClockOutDetails}>
+                    <Text style={styles.selfClockOutLocation}>{currentUserJobSite}</Text>
+                    <Text style={styles.selfClockOutSeparator}> • </Text>
+                    <Text style={styles.selfClockOutHours}>{currentUserHours}</Text>
+                  </View>
+                </View>
+                {selfClockingOut ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <IconSymbol
+                    ios_icon_name="clock.badge.xmark"
+                    android_material_icon_name="schedule"
+                    size={24}
+                    color="#ffffff"
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {currentUserEntry && (
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR CLOCK OUT YOUR TEAM</Text>
+              <View style={styles.dividerLine} />
+            </View>
+          )}
+
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Active Employees</Text>
             <View style={styles.selectedBadge}>
@@ -349,7 +449,7 @@ export default function ClockOutScreen() {
                       size={24}
                       color="#ffffff"
                     />
-                    <Text style={styles.clockOutButtonText}>Clock Out All ({selectedCount})</Text>
+                    <Text style={styles.clockOutButtonText}>Clock Out Team ({selectedCount})</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -384,11 +484,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#b0c4de',
   },
+  selfClockOutContainer: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  selfClockOutButton: {
+    backgroundColor: colors.error,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  selfClockOutIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  selfClockOutContent: {
+    flex: 1,
+  },
+  selfClockOutTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 6,
+  },
+  selfClockOutDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selfClockOutLocation: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  selfClockOutSeparator: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  selfClockOutHours: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#b0c4de',
+    marginHorizontal: 12,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 0,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
