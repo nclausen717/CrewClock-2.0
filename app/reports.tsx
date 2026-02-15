@@ -245,10 +245,14 @@ export default function ReportsScreen() {
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv' });
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
+        link.href = blobUrl;
         link.download = filename;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
         showModal('Export Successful', `Report exported as ${filename}`, 'success');
       } else {
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
