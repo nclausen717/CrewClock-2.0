@@ -106,6 +106,7 @@ export function registerEmployeeRoutes(app: App) {
             name: { type: 'string' },
             isCrewLeader: { type: 'boolean' },
             email: { type: 'string', format: 'email' },
+            password: { type: 'string' },
           },
         },
         response: {
@@ -130,10 +131,11 @@ export function registerEmployeeRoutes(app: App) {
       const session = await requireAuthWithRole(app, request, reply);
       if (!session) return;
 
-      const { name, isCrewLeader, email } = request.body as {
+      const { name, isCrewLeader, email, password } = request.body as {
         name: string;
         isCrewLeader: boolean;
         email?: string;
+        password?: string;
       };
 
       app.logger.info({ userId: session.user.id, name, isCrewLeader }, 'Creating employee');
@@ -183,7 +185,8 @@ export function registerEmployeeRoutes(app: App) {
         // If crew leader, create user account first, then employee
         if (isCrewLeader) {
           const userId = crypto.randomUUID();
-          generatedPassword = generatePassword();
+          // Use provided password or generate one
+          generatedPassword = password || generatePassword();
 
           try {
             // Create user account
