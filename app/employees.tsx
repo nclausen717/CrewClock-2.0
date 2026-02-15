@@ -103,33 +103,24 @@ export default function EmployeesScreen() {
       showModal('Error', 'Email required for crew leaders', 'warning');
       return;
     }
-    if (isCrewLeader) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        showModal('Error', 'Valid email required', 'warning');
-        return;
-      }
-    }
 
     setAddingEmployee(true);
     try {
-      const body: any = {name: name.trim(), isCrewLeader};
+      const body: any = {
+        name: name.trim(),
+        isCrewLeader
+      };
+      
       if (isCrewLeader) {
         body.email = email.trim();
-      } else {
-        body.phone = phone || null;
-        body.crewId = crewId || null;
       }
       
-      console.log('[API] Creating employee with body:', body);
       const response = await authenticatedPost<{employee: Employee; generatedPassword?: string}>('/api/employees', body);
       
-      console.log('[API] Employee created:', response);
-      
       if (response.generatedPassword) {
-        showModal('Success', `Crew leader created\n\nPassword: ${response.generatedPassword}`, 'success');
+        showModal('Success', `Crew leader "${name}" created\n\nGenerated Password: ${response.generatedPassword}`, 'success');
       } else {
-        showModal('Success', `"${name}" added`, 'success');
+        showModal('Success', `"${name}" added successfully`, 'success');
       }
       
       setName('');
@@ -141,8 +132,7 @@ export default function EmployeesScreen() {
       setIsCrewLeader(false);
       fetchEmployees();
     } catch (error: any) {
-      console.error('[API] Failed to create employee:', error);
-      showModal('Error', error?.message || 'Failed', 'error');
+      showModal('Error', error?.message || 'Failed to add employee', 'error');
     } finally {
       setAddingEmployee(false);
     }
