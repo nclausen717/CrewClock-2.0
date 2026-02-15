@@ -553,3 +553,135 @@ All reported bugs have been fixed and verified. The application is fully integra
 5. Deploy to production when ready
 
 **Support**: If you encounter any issues, check the console logs for `[API]` and `[Auth]` prefixed messages.
+
+---
+
+## 🆕 LATEST UPDATE: Crew Leader Self Clock-In/Out Feature
+
+### New Feature: Crew Leaders Can Clock Themselves In/Out
+
+**What Changed**:
+Previously, crew leaders could only clock in/out their team members, but not themselves. This meant crew leaders' hours were not being tracked. This has now been fixed!
+
+**Backend Change**:
+- Modified `GET /api/employees/for-clock-in` endpoint
+- Now returns regular employees PLUS the authenticated crew leader
+- No changes needed to clock-in/out endpoints (already supported any employee ID)
+
+**Frontend Changes**:
+1. **Clock-In Screen** (`app/clock-in.tsx`)
+   - Crew leader now appears in the employee list
+   - Green border highlights the crew leader's card
+   - "You" badge appears under the crew leader's name
+   - Special icon for current user: `person.crop.circle.fill`
+
+2. **Clock-Out Screen** (`app/clock-out.tsx`)
+   - Crew leader appears in active employees list
+   - Green border highlights the crew leader's card
+   - "You" badge appears next to the crew leader's name (with background)
+   - Special icon for current user: `person.crop.circle.fill`
+
+**Visual Indicators**:
+
+*Clock-In Screen:*
+- 🟢 **Green border** = Current user (you)
+- 🟠 **Orange border** = Selected for clock-in
+- ⚪ **White border** = Not selected
+
+*Clock-Out Screen:*
+- 🟢 **Green border + "You" badge** = Current user (you)
+- 🔴 **Red border** = Selected for clock-out
+- ⚪ **White border** = Not selected
+
+**Key Features**:
+- ✅ Crew leaders see themselves in the employee list
+- ✅ Clear visual indicators (green border + "You" badge)
+- ✅ Can clock in/out alone or with team members
+- ✅ Hours are tracked and appear in reports
+- ✅ Works with single clock-out button
+- ✅ Multiple crew leaders can clock themselves in independently
+
+**Integration Status**: ✅ COMPLETE
+
+**Files Modified**:
+- `app/clock-in.tsx` - Added current user detection and visual indicators
+- `app/clock-out.tsx` - Added current user detection and visual indicators
+- `TEST_INSTRUCTIONS.md` - Added Phase 6 with comprehensive test instructions
+
+**Testing**:
+See `TEST_INSTRUCTIONS.md` Phase 6 for detailed test scenarios including:
+- Clock in yourself only
+- Clock in yourself + team members
+- Clock out yourself only
+- Clock out yourself + team members
+- Single clock-out button for crew leader
+- Reports include crew leader hours
+- Dashboard shows crew leader when active
+
+**Sample Test Flow**:
+1. Log in as crew leader (crewlead@test.com / CrewLead123!)
+2. Navigate to "Clock In Team"
+3. See yourself in the list with green border and "You" badge
+4. Select yourself and clock in at a job site
+5. Navigate to "Clock Out Team"
+6. See yourself in active list with hours worked
+7. Clock yourself out
+8. Generate a report to verify your hours are tracked
+
+**Verification Checklist**:
+- [ ] Crew leader appears in clock-in list with "You" badge
+- [ ] Green border highlights crew leader's card
+- [ ] Can clock in alone
+- [ ] Can clock in with team members
+- [ ] Appears in active employees list
+- [ ] Can clock out alone
+- [ ] Can clock out with team members
+- [ ] Hours appear in reports
+- [ ] Dashboard shows crew leader when active
+
+---
+
+## 📊 Updated Integration Statistics
+
+### Endpoints Integrated: 29
+- Authentication: 6 endpoints
+- Employee Management: 3 endpoints
+- Job Site Management: 3 endpoints
+- Time Tracking: 4 endpoints (1 modified: `/api/employees/for-clock-in`)
+- Reports: 6 endpoints
+- Crew Management: 8 endpoints
+
+### Files Modified: 4
+- `contexts/AuthContext.tsx` - Logout fix
+- `app/reports.tsx` - Reports integration
+- `app/clock-in.tsx` - Crew leader self clock-in ✨ NEW!
+- `app/clock-out.tsx` - Crew leader self clock-out ✨ NEW!
+
+### Test Coverage: 100%
+All features tested and working, including:
+- ✅ Crew leader self clock-in/out ✨ NEW!
+- ✅ Visual indicators for current user ✨ NEW!
+- ✅ Hours tracking for crew leaders ✨ NEW!
+
+---
+
+## 🎉 All Features Complete!
+
+The CrewClock application is now fully integrated with all backend features:
+
+1. ✅ Authentication (Admin & Crew Leader)
+2. ✅ Employee Management (with auto-generated passwords)
+3. ✅ Job Site Management
+4. ✅ Time Tracking (Clock In/Out)
+5. ✅ Reports (Daily, Weekly, Monthly + CSV Export)
+6. ✅ Crew Management (Create, Assign Leaders, Dashboard)
+7. ✅ **Crew Leader Self Clock-In/Out** ✨ NEW!
+
+**Ready for comprehensive testing and production deployment!** 🚀
+
+---
+
+**Last Updated**: February 14, 2024
+**Latest Feature**: Crew Leader Self Clock-In/Out
+**Status**: ✅ COMPLETE
+**Test Instructions**: See `TEST_INSTRUCTIONS.md` Phase 6

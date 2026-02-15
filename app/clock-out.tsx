@@ -15,6 +15,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Modal } from '@/components/ui/Modal';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ActiveTimeEntry {
   id: string;
@@ -27,6 +28,7 @@ interface ActiveTimeEntry {
 
 export default function ClockOutScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [activeEntries, setActiveEntries] = useState<ActiveTimeEntry[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [workDescription, setWorkDescription] = useState<string>('');
@@ -240,11 +242,16 @@ export default function ClockOutScreen() {
               <>
                 {activeEntries.map((entry) => {
                   const isSelected = selectedEmployees.has(entry.employeeId);
+                  const isCurrentUser = user?.name === entry.employeeName;
                   
                   return (
                     <View
                       key={entry.id}
-                      style={[styles.employeeCard, isSelected && styles.employeeCardSelected]}
+                      style={[
+                        styles.employeeCard, 
+                        isSelected && styles.employeeCardSelected,
+                        isCurrentUser && styles.employeeCardCurrentUser
+                      ]}
                     >
                       <TouchableOpacity
                         style={styles.employeeCardMain}
@@ -262,14 +269,19 @@ export default function ClockOutScreen() {
                         </View>
                         <View style={[styles.employeeAvatar, { backgroundColor: `${colors.error}20` }]}>
                           <IconSymbol
-                            ios_icon_name="person.fill"
+                            ios_icon_name={isCurrentUser ? "person.crop.circle.fill" : "person.fill"}
                             android_material_icon_name="person"
                             size={24}
                             color={colors.error}
                           />
                         </View>
                         <View style={styles.employeeInfo}>
-                          <Text style={styles.employeeName}>{entry.employeeName}</Text>
+                          <View style={styles.employeeNameRow}>
+                            <Text style={styles.employeeName}>{entry.employeeName}</Text>
+                            {isCurrentUser && (
+                              <Text style={styles.currentUserBadge}>You</Text>
+                            )}
+                          </View>
                           <View style={styles.infoRow}>
                             <IconSymbol
                               ios_icon_name="location.fill"
@@ -434,6 +446,10 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
     backgroundColor: `${colors.error}15`,
   },
+  employeeCardCurrentUser: {
+    borderColor: colors.success,
+    borderWidth: 2,
+  },
   employeeCardMain: {
     flex: 1,
     flexDirection: 'row',
@@ -464,11 +480,25 @@ const styles = StyleSheet.create({
   employeeInfo: {
     flex: 1,
   },
+  employeeNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   employeeName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 4,
+  },
+  currentUserBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.success,
+    backgroundColor: `${colors.success}20`,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   infoRow: {
     flexDirection: 'row',

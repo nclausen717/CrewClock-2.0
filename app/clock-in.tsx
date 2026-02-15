@@ -16,6 +16,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Modal } from '@/components/ui/Modal';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Employee {
   id: string;
@@ -30,6 +31,7 @@ interface JobSite {
 
 export default function ClockInScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [jobSites, setJobSites] = useState<JobSite[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
@@ -203,11 +205,16 @@ export default function ClockInScreen() {
             ) : (
               employees.map((employee) => {
                 const isSelected = selectedEmployees.has(employee.id);
+                const isCurrentUser = user?.name === employee.name;
                 
                 return (
                   <TouchableOpacity
                     key={employee.id}
-                    style={[styles.employeeCard, isSelected && styles.employeeCardSelected]}
+                    style={[
+                      styles.employeeCard, 
+                      isSelected && styles.employeeCardSelected,
+                      isCurrentUser && styles.employeeCardCurrentUser
+                    ]}
                     onPress={() => toggleEmployee(employee.id)}
                   >
                     <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
@@ -222,13 +229,18 @@ export default function ClockInScreen() {
                     </View>
                     <View style={[styles.employeeAvatar, { backgroundColor: `${colors.crewLeadPrimary}20` }]}>
                       <IconSymbol
-                        ios_icon_name="person.fill"
+                        ios_icon_name={isCurrentUser ? "person.crop.circle.fill" : "person.fill"}
                         android_material_icon_name="person"
                         size={24}
                         color={colors.crewLeadPrimary}
                       />
                     </View>
-                    <Text style={styles.employeeName}>{employee.name}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.employeeName}>{employee.name}</Text>
+                      {isCurrentUser && (
+                        <Text style={styles.currentUserBadge}>You</Text>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })
@@ -418,6 +430,10 @@ const styles = StyleSheet.create({
     borderColor: colors.crewLeadPrimary,
     backgroundColor: `${colors.crewLeadPrimary}15`,
   },
+  employeeCardCurrentUser: {
+    borderColor: colors.success,
+    borderWidth: 2,
+  },
   checkbox: {
     width: 28,
     height: 28,
@@ -444,7 +460,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
-    flex: 1,
+  },
+  currentUserBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.success,
+    marginTop: 2,
   },
   footer: {
     position: 'absolute',
