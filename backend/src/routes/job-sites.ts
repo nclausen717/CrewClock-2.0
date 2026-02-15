@@ -57,8 +57,7 @@ export function registerJobSitesRoutes(app: App) {
             isActive: jobSites.isActive,
             createdAt: jobSites.createdAt,
           })
-          .from(jobSites)
-          .where(eq(jobSites.createdBy, session.user.id));
+          .from(jobSites);
 
         app.logger.info({ userId: session.user.id, count: sites.length }, 'Job sites fetched');
 
