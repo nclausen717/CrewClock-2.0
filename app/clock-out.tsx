@@ -91,29 +91,18 @@ export default function ClockOutScreen() {
       return;
     }
 
-    console.log('[API] Self clocking out');
+    console.log('[API] Self clocking out using dedicated endpoint');
     setSelfClockingOut(true);
 
     try {
-      const requestBody: {
-        employeeIds: string[];
-        workDescription?: string;
-      } = {
-        employeeIds: [currentUserEntry.employeeId],
-      };
-
-      if (workDescription.trim()) {
-        requestBody.workDescription = workDescription.trim();
-      }
-
       await authenticatedPost<{
         success: boolean;
-        entries: {
+        timeEntry: {
           id: string;
-          employeeId: string;
+          userId: string;
           clockOutTime: string;
-        }[];
-      }>('/api/time-entries/clock-out', requestBody);
+        };
+      }>('/api/time-entries/clock-out-self', {});
       
       showModal(
         'Clock Out Successful',

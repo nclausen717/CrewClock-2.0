@@ -1,5 +1,4 @@
 
-// Clock Out Screen - app/clock-out.tsx will be created separately
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -38,6 +37,7 @@ export default function ClockInScreen() {
   const [selectedJobSite, setSelectedJobSite] = useState<string | null>(null);
   const [workDescription, setWorkDescription] = useState<string>('');
   const [showJobSiteModal, setShowJobSiteModal] = useState(false);
+  const [isSelfClockIn, setIsSelfClockIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selfClockingIn, setSelfClockingIn] = useState(false);
@@ -100,19 +100,13 @@ export default function ClockInScreen() {
       return;
     }
 
+    setIsSelfClockIn(true);
     setShowJobSiteModal(true);
   };
 
   const confirmSelfClockIn = async () => {
     if (!selectedJobSite) {
       showModal('No Job Site Selected', 'Please select a job site', 'warning');
-      return;
-    }
-
-    const currentUserEmployee = employees.find(emp => emp.name === user?.name);
-    
-    if (!currentUserEmployee) {
-      showModal('Error', 'Could not find your employee record', 'error');
       return;
     }
 
@@ -123,11 +117,9 @@ export default function ClockInScreen() {
 
     try {
       const requestBody: {
-        employeeIds: string[];
         jobSiteId: string;
         workDescription?: string;
       } = {
-        employeeIds: [currentUserEmployee.id],
         jobSiteId: selectedJobSite,
       };
 
@@ -137,13 +129,13 @@ export default function ClockInScreen() {
 
       await authenticatedPost<{
         success: boolean;
-        entries: {
+        timeEntry: {
           id: string;
-          employeeId: string;
+          userId: string;
           jobSiteId: string;
           clockInTime: string;
-        }[];
-      }>('/api/time-entries/clock-in', requestBody);
+        };
+      }>('/api/time-entries/clock-in-self', requestBody);
       
       showModal(
         'Clock In Successful',
@@ -154,6 +146,7 @@ export default function ClockInScreen() {
       setSelectedJobSite(null);
       setWorkDescription('');
       setShowJobSiteModal(false);
+      setIsSelfClockIn(false);
       
       // Refresh data to update UI
       await fetchData();
@@ -173,6 +166,7 @@ export default function ClockInScreen() {
       return;
     }
 
+    setIsSelfClockIn(false);
     setShowJobSiteModal(true);
   };
 
@@ -434,6 +428,7 @@ export default function ClockInScreen() {
                 onPress={() => {
                   setShowJobSiteModal(false);
                   setSelectedJobSite(null);
+                  setIsSelfClockIn(false);
                 }}
                 disabled={submitting || selfClockingIn}
               >
@@ -442,7 +437,7 @@ export default function ClockInScreen() {
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton, !selectedJobSite && styles.confirmButtonDisabled]}
-                onPress={selfClockingIn ? confirmSelfClockIn : confirmClockIn}
+                onPress={isSelfClockIn ? confirmSelfClockIn : confirmClockIn}
                 disabled={!selectedJobSite || submitting || selfClockingIn}
               >
                 {(submitting || selfClockingIn) ? (

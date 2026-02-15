@@ -257,43 +257,219 @@ If you encounter issues:
 
 ## 🆕 Latest Backend Updates (February 2025)
 
-### Internal Bug Fixes & Error Handling Improvements
+### ⭐ NEW FEATURE: Crew Leader Self Clock-In/Out (February 2025)
 
-The backend has been updated with **internal improvements** that enhance error handling without changing the API contract:
+The backend has been updated with **new endpoints** for crew leaders to clock themselves in and out:
 
-#### 1. **Duplicate Email Handling** (409 Conflict)
-- **Endpoint**: `/api/auth/crew-lead/register`, `/api/auth/admin/register`
-- **Change**: Now returns 409 status with message: "An account with this email already exists"
-- **Frontend Impact**: ✅ Already handled - error message automatically displayed via Modal
-- **No Code Changes Required**: Existing error handling catches and displays the message
+#### 1. **Permission Check Added** to `/api/employees/for-clock-in`
+- **Change**: Now requires `crew_lead` role (returns 403 if not crew leader)
+- **Frontend Impact**: ✅ Already handled - uses `authenticatedGet()` which includes auth token
+- **No Code Changes Required**: Existing auth token automatically enforces permission
 
-#### 2. **Employee Creation Flow Fixed**
-- **Endpoint**: `POST /api/employees`
-- **Change**: Fixed internal order (user → account → employee) when admin creates crew leaders
-- **Frontend Impact**: ✅ No changes needed - request/response format unchanged
-- **Benefit**: Crew leader creation by admin now works reliably
+#### 2. **New Endpoint**: `POST /api/time-entries/clock-in-self`
+- **Purpose**: Allows crew leaders to clock themselves in
+- **Request Body**: 
+  ```json
+  {
+    "jobSiteId": "string (required)",
+    "workDescription": "string (optional)"
+  }
+  ```
+- **Response**: 
+  ```json
+  {
+    "success": true,
+    "timeEntry": {
+      "id": "string",
+      "userId": "string",
+      "jobSiteId": "string",
+      "clockInTime": "ISO date string",
+      "workDescription": "string | null"
+    }
+  }
+  ```
+- **Frontend Integration**: ✅ **FULLY INTEGRATED** in `app/clock-in.tsx`
+  - **Location**: Lines 103-154 (`handleSelfClockIn()` and `confirmSelfClockIn()`)
+  - **UI**: Prominent green "Clock Yourself In" button at top of screen (lines 217-234)
+  - **Flow**: 
+    1. User taps button → Job site selection modal appears
+    2. Optional work description can be added
+    3. Calls endpoint with selected job site
+    4. Success modal shows confirmation
+    5. Screen refreshes to show updated status
 
-#### 3. **Better Error Messages**
-- **All Endpoints**: Improved error responses
-- **Changes**:
-  - Duplicate emails return 409 with clear messages
-  - Foreign key errors return 400 with clear messages
-  - No raw SQL errors exposed to frontend
-- **Frontend Impact**: ✅ Already handled - all errors caught and displayed in Modal
+#### 3. **New Endpoint**: `POST /api/time-entries/clock-out-self`
+- **Purpose**: Allows crew leaders to clock themselves out
+- **Request Body**: Empty `{}`
+- **Response**: 
+  ```json
+  {
+    "success": true,
+    "timeEntry": {
+      "id": "string",
+      "userId": "string",
+      "clockOutTime": "ISO date string"
+    }
+  }
+  ```
+- **Frontend Integration**: ✅ **FULLY INTEGRATED** in `app/clock-out.tsx`
+  - **Location**: Lines 88-119 (`handleSelfClockOut()`)
+  - **UI**: Red "Clock Yourself Out" button at top (only visible when user is clocked in) (lines 280-310)
+  - **Flow**: 
+    1. Button shows current job site and hours worked
+    2. User taps button → Calls endpoint immediately
+    3. Success modal shows confirmation
+    4. Screen refreshes to show updated status
 
-### ✅ Frontend Integration Status: UP TO DATE
+### ✅ Frontend Integration Status: FULLY UP TO DATE
 
-**NO INTEGRATION WORK REQUIRED** because:
-1. ✅ API endpoints did not change (same request/response format)
-2. ✅ Only error handling improved (better status codes and messages)
-3. ✅ Frontend already has comprehensive error handling with Modal component
-4. ✅ All error messages automatically displayed to users
-5. ✅ Generated passwords for crew leaders already shown in UI
+**ALL NEW FEATURES INTEGRATED** with proper architecture:
+1. ✅ Uses `authenticatedPost()` from `utils/api.ts` (no raw fetch)
+2. ✅ Uses custom `Modal` component (no Alert.alert)
+3. ✅ Proper error handling with try-catch blocks
+4. ✅ Loading states during API calls
+5. ✅ Console logging for debugging (`[API]` prefix)
+6. ✅ Backend URL read from `app.json` via Constants
+
+### 🧪 Testing the New Features
+
+#### Test Scenario 1: Self Clock-In
+```
+1. Login as crew leader
+2. Navigate to "Clock In Team" screen
+3. Tap the green "Clock Yourself In" button at the top
+4. Select a job site from the modal
+5. (Optional) Add work description
+6. Tap "Confirm Clock In"
+7. ✅ Verify success message appears
+8. ✅ Verify you appear in the active employees list
+```
+
+#### Test Scenario 2: Self Clock-Out
+```
+1. While clocked in as crew leader
+2. Navigate to "Clock Out Team" screen
+3. ✅ Verify red "Clock Yourself Out" button shows:
+   - Your current job site name
+   - Hours worked so far
+4. Tap "Clock Yourself Out" button
+5. ✅ Verify success message appears
+6. ✅ Verify you no longer appear in active employees list
+7. ✅ Verify button disappears from screen
+```
+
+#### Test Scenario 3: Permission Check
+```
+1. Try to access clock-in screen as non-crew-leader
+2. ✅ Should get 403 error when fetching employees
+3. Login as crew leader
+4. ✅ Should successfully load employees list
+```
+
+### 📊 Code Changes Summary
+
+**Files Modified:**
+- ✅ `app/clock-in.tsx` - Added self clock-in functionality
+- ✅ `app/clock-out.tsx` - Added self clock-out functionality
+
+**New API Calls:**
+- ✅ `POST /api/time-entries/clock-in-self` (line 138 in clock-in.tsx)
+- ✅ `POST /api/time-entries/clock-out-self` (line 100 in clock-out.tsx)
+
+**UI Components Added:**
+- ✅ Self clock-in button with icon and description
+- ✅ Self clock-out button showing job site and hours
+- ✅ Divider separating self actions from team actions
+
+---
+
+### Previous Backend Updates (February 2025)
+
+#### Internal Bug Fixes & Error Handling Improvements
+
+The backend was previously updated with **internal improvements** that enhanced error handling without changing the API contract:
+
+1. **Duplicate Email Handling** (409 Conflict)
+   - ✅ Already handled - error message automatically displayed via Modal
+
+2. **Employee Creation Flow Fixed**
+   - ✅ No changes needed - request/response format unchanged
+
+3. **Better Error Messages**
+   - ✅ Already handled - all errors caught and displayed in Modal
 
 **The frontend is production-ready and handles all backend responses correctly.**
+
+---
+
+## 🎉 Integration Complete Summary
+
+### ✅ All Backend Changes Integrated
+
+**Latest Feature: Crew Leader Self Clock-In/Out**
+- ✅ Permission check on `/api/employees/for-clock-in` (automatic via auth token)
+- ✅ `POST /api/time-entries/clock-in-self` endpoint integrated
+- ✅ `POST /api/time-entries/clock-out-self` endpoint integrated
+
+**Files Modified:**
+- `app/clock-in.tsx` - Added self clock-in button and functionality
+- `app/clock-out.tsx` - Added self clock-out button and functionality
+- `BACKEND_INTEGRATION_STATUS.md` - Updated documentation
+
+**Architecture Compliance:**
+- ✅ Uses `authenticatedPost()` from `utils/api.ts` (no raw fetch)
+- ✅ Uses custom `Modal` component (no Alert.alert)
+- ✅ Proper error handling with try-catch blocks
+- ✅ Loading states during API calls
+- ✅ Console logging for debugging
+- ✅ Backend URL read from `app.json`
+
+### 🚀 Ready for Testing
+
+The app is **production-ready** with all backend features integrated:
+
+1. **Authentication** - Login, register, session persistence
+2. **Employee Management** - CRUD operations for employees
+3. **Job Site Management** - CRUD operations for job sites
+4. **Time Tracking** - Clock in/out for teams + self clock-in/out for crew leaders
+5. **Reports** - Daily, weekly, monthly reports with CSV export
+6. **Crew Management** - Create crews, assign leaders, manage members
+7. **Crew Dashboard** - Real-time overview of crew hours
+
+### 📱 User Experience
+
+**For Crew Leaders:**
+- Quick self clock-in/out buttons at the top of clock screens
+- Self clock-in shows job site selection modal
+- Self clock-out shows current job site and hours worked
+- Separate section for clocking in/out team members
+
+**For Admins:**
+- Full employee and job site management
+- Crew organization and assignment
+- Live crew dashboard with real-time hours
+- Comprehensive reporting with CSV export
+
+### 🔐 Demo Credentials
+
+**Crew Leader:**
+```
+Email: crewlead@example.com
+Password: crew123
+```
+
+**Admin:**
+```
+Email: admin@example.com
+Password: admin123
+```
+
+*(Register new accounts if these don't exist)*
 
 ---
 
 **Integration completed on**: February 2025
 **Backend URL**: https://x7ydjwck6f6dxcyxtq5hxqfkggu4jxdd.app.specular.dev
 **Status**: ✅ All frontend integration complete and up to date with latest backend improvements
+
+**Next Steps**: Test the new self clock-in/out features on iOS, Android, and Web platforms
