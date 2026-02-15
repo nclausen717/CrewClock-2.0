@@ -627,7 +627,7 @@ export default function ReportsScreen() {
                   ios_icon_name="square.and.arrow.up"
                   android_material_icon_name="file-download"
                   size={20}
-                  color={colors.adminPrimary}
+                  color="#ffffff"
                 />
                 <Text style={styles.exportButtonText}>Export CSV</Text>
               </TouchableOpacity>
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
   exportButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.adminPrimary,
+    color: '#ffffff',
   },
   summaryCard: {
     backgroundColor: 'rgba(255, 107, 53, 0.2)',
