@@ -19,8 +19,11 @@ import { Modal } from '@/components/ui/Modal';
 interface CrewMember {
   employeeId: string;
   employeeName: string;
+  jobSiteId?: string;
+  jobSiteName?: string;
   isActive: boolean;
   hoursToday: number;
+  clockInTime?: string;
 }
 
 interface CrewDashboardData {
@@ -32,8 +35,24 @@ interface CrewDashboardData {
   totalHoursToday: number;
 }
 
+interface IndividualEmployee {
+  employeeId: string;
+  employeeName: string;
+  jobSiteId: string;
+  jobSiteName: string;
+  isActive: boolean;
+  hoursToday: number;
+  clockInTime?: string;
+}
+
+interface DashboardResponse {
+  crews: CrewDashboardData[];
+  individualEmployees: IndividualEmployee[];
+}
+
 export default function CrewDashboardScreen() {
-  const [dashboardData, setDashboardData] = useState<CrewDashboardData[]>([]);
+  const [crews, setCrews] = useState<CrewDashboardData[]>([]);
+  const [individualEmployees, setIndividualEmployees] = useState<IndividualEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -59,9 +78,10 @@ export default function CrewDashboardScreen() {
     }
     
     try {
-      const response = await authenticatedGet<CrewDashboardData[]>('/api/crews/dashboard');
-      console.log('[API] Dashboard data fetched:', response.length, 'crews');
-      setDashboardData(response);
+      const response = await authenticatedGet<DashboardResponse>('/api/crews/dashboard');
+      console.log('[API] Dashboard data fetched:', response.crews.length, 'crews,', response.individualEmployees.length, 'individual employees');
+      setCrews(response.crews);
+      setIndividualEmployees(response.individualEmployees);
     } catch (error: any) {
       console.error('[API] Failed to fetch dashboard data:', error);
       const errorMessage = error?.message || error?.toString() || 'Failed to load dashboard data. Please try again.';
@@ -106,14 +126,29 @@ export default function CrewDashboardScreen() {
     return formattedText;
   };
 
-  const totalHoursAllCrews = dashboardData.reduce((sum, crew) => sum + crew.totalHoursToday, 0);
-  const totalActiveEmployees = dashboardData.reduce(
+  const formatTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    const timeText = `${displayHours}:${displayMinutes} ${ampm}`;
+    return timeText;
+  };
+
+  const totalHoursAllCrews = crews.reduce((sum, crew) => sum + crew.totalHoursToday, 0);
+  const totalHoursIndividuals = individualEmployees.reduce((sum, emp) => sum + emp.hoursToday, 0);
+  const totalHours = totalHoursAllCrews + totalHoursIndividuals;
+  
+  const totalActiveEmployees = crews.reduce(
     (sum, crew) => sum + crew.members.filter(m => m.isActive).length,
     0
-  );
-  const totalEmployees = dashboardData.reduce((sum, crew) => sum + crew.members.length, 0);
+  ) + individualEmployees.filter(emp => emp.isActive).length;
+  
+  const totalEmployees = crews.reduce((sum, crew) => sum + crew.members.length, 0) + individualEmployees.length;
 
-  const totalHoursText = formatHours(totalHoursAllCrews);
+  const totalHoursText = formatHours(totalHours);
   const activeEmployeesText = `${totalActiveEmployees} active`;
   const totalEmployeesText = `${totalEmployees} total`;
 
@@ -166,7 +201,7 @@ export default function CrewDashboardScreen() {
             <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
             <Text style={styles.loadingText}>Loading dashboard...</Text>
           </View>
-        ) : dashboardData.length === 0 ? (
+        ) : crews.length === 0 && individualEmployees.length === 0 ? (
           <View style={styles.emptyContainer}>
             <IconSymbol
               ios_icon_name="person.3.slash"
@@ -174,74 +209,164 @@ export default function CrewDashboardScreen() {
               size={64}
               color="#b0c4de"
             />
-            <Text style={styles.emptyTitle}>No Crews Yet</Text>
-            <Text style={styles.emptyText}>Create crews to see them here</Text>
+            <Text style={styles.emptyTitle}>No Active Employees</Text>
+            <Text style={styles.emptyText}>No one is currently clocked in</Text>
           </View>
         ) : (
-          dashboardData.map((crew) => {
-            const leaderText = crew.crewLeaderName || 'No leader assigned';
-            const crewHoursText = formatHours(crew.totalHoursToday);
-            const activeCount = crew.members.filter(m => m.isActive).length;
-            const activeCountText = `${activeCount} active`;
-            
-            return (
-              <View key={crew.crewId} style={styles.crewSection}>
+          <>
+            {/* Individual Employees Section */}
+            {individualEmployees.length > 0 && (
+              <View style={styles.crewSection}>
                 <View style={styles.crewHeader}>
                   <View style={styles.crewHeaderLeft}>
-                    <View style={[styles.crewAvatar, { backgroundColor: colors.crewLeadPrimary }]}>
+                    <View style={[styles.crewAvatar, { backgroundColor: colors.adminPrimary }]}>
                       <IconSymbol
-                        ios_icon_name="person.3.fill"
-                        android_material_icon_name="groups"
+                        ios_icon_name="person.fill"
+                        android_material_icon_name="person"
                         size={28}
                         color="#ffffff"
                       />
                     </View>
                     <View style={styles.crewHeaderInfo}>
-                      <Text style={styles.crewName}>{crew.crewName}</Text>
-                      <Text style={styles.crewLeader}>{leaderText}</Text>
+                      <Text style={styles.crewName}>Individual Employees</Text>
+                      <Text style={styles.crewLeader}>Not assigned to a crew</Text>
                     </View>
                   </View>
                   <View style={styles.crewHeaderRight}>
-                    <Text style={styles.crewHours}>{crewHoursText}</Text>
-                    <Text style={styles.crewActiveCount}>{activeCountText}</Text>
+                    <Text style={styles.crewHours}>{formatHours(totalHoursIndividuals)}</Text>
+                    <Text style={styles.crewActiveCount}>
+                      {individualEmployees.filter(emp => emp.isActive).length} active
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.membersContainer}>
-                  {crew.members.length === 0 ? (
-                    <Text style={styles.noMembersText}>No members assigned</Text>
-                  ) : (
-                    crew.members.map((member) => {
-                      const memberHoursText = formatHours(member.hoursToday);
-                      const statusText = member.isActive ? 'Clocked In' : 'Clocked Out';
-                      const statusColor = member.isActive ? colors.crewLeadPrimary : '#b0c4de';
-                      
-                      return (
-                        <View key={member.employeeId} style={styles.memberCard}>
-                          <View style={styles.memberLeft}>
-                            <View style={[
-                              styles.statusIndicator,
-                              { backgroundColor: member.isActive ? colors.crewLeadPrimary : 'rgba(255, 255, 255, 0.2)' }
-                            ]} />
-                            <View style={styles.memberInfo}>
-                              <Text style={styles.memberName}>{member.employeeName}</Text>
-                              <Text style={[styles.memberStatus, { color: statusColor }]}>
-                                {statusText}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.memberRight}>
-                            <Text style={styles.memberHours}>{memberHoursText}</Text>
-                            <Text style={styles.memberHoursLabel}>today</Text>
+                  {individualEmployees.map((employee) => {
+                    const memberHoursText = formatHours(employee.hoursToday);
+                    const statusText = employee.isActive ? 'Clocked In' : 'Clocked Out';
+                    const statusColor = employee.isActive ? colors.crewLeadPrimary : '#b0c4de';
+                    const clockInTimeText = employee.clockInTime ? formatTime(employee.clockInTime) : '';
+                    
+                    return (
+                      <View key={employee.employeeId} style={styles.memberCard}>
+                        <View style={styles.memberLeft}>
+                          <View style={[
+                            styles.statusIndicator,
+                            { backgroundColor: employee.isActive ? colors.crewLeadPrimary : 'rgba(255, 255, 255, 0.2)' }
+                          ]} />
+                          <View style={styles.memberInfo}>
+                            <Text style={styles.memberName}>{employee.employeeName}</Text>
+                            <Text style={[styles.memberStatus, { color: statusColor }]}>
+                              {statusText}
+                            </Text>
+                            {employee.isActive && employee.jobSiteName && (
+                              <View style={styles.jobSiteInfo}>
+                                <IconSymbol
+                                  ios_icon_name="location.fill"
+                                  android_material_icon_name="location-on"
+                                  size={12}
+                                  color="#b0c4de"
+                                />
+                                <Text style={styles.jobSiteText}>{employee.jobSiteName}</Text>
+                              </View>
+                            )}
+                            {employee.isActive && clockInTimeText && (
+                              <Text style={styles.clockInTimeText}>Since {clockInTimeText}</Text>
+                            )}
                           </View>
                         </View>
-                      );
-                    })
-                  )}
+                        <View style={styles.memberRight}>
+                          <Text style={styles.memberHours}>{memberHoursText}</Text>
+                          <Text style={styles.memberHoursLabel}>today</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
-            );
-          })
+            )}
+
+            {/* Crews Section */}
+            {crews.map((crew) => {
+              const leaderText = crew.crewLeaderName || 'No leader assigned';
+              const crewHoursText = formatHours(crew.totalHoursToday);
+              const activeCount = crew.members.filter(m => m.isActive).length;
+              const activeCountText = `${activeCount} active`;
+              
+              return (
+                <View key={crew.crewId} style={styles.crewSection}>
+                  <View style={styles.crewHeader}>
+                    <View style={styles.crewHeaderLeft}>
+                      <View style={[styles.crewAvatar, { backgroundColor: colors.crewLeadPrimary }]}>
+                        <IconSymbol
+                          ios_icon_name="person.3.fill"
+                          android_material_icon_name="groups"
+                          size={28}
+                          color="#ffffff"
+                        />
+                      </View>
+                      <View style={styles.crewHeaderInfo}>
+                        <Text style={styles.crewName}>{crew.crewName}</Text>
+                        <Text style={styles.crewLeader}>{leaderText}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.crewHeaderRight}>
+                      <Text style={styles.crewHours}>{crewHoursText}</Text>
+                      <Text style={styles.crewActiveCount}>{activeCountText}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.membersContainer}>
+                    {crew.members.length === 0 ? (
+                      <Text style={styles.noMembersText}>No members assigned</Text>
+                    ) : (
+                      crew.members.map((member) => {
+                        const memberHoursText = formatHours(member.hoursToday);
+                        const statusText = member.isActive ? 'Clocked In' : 'Clocked Out';
+                        const statusColor = member.isActive ? colors.crewLeadPrimary : '#b0c4de';
+                        const clockInTimeText = member.clockInTime ? formatTime(member.clockInTime) : '';
+                        
+                        return (
+                          <View key={member.employeeId} style={styles.memberCard}>
+                            <View style={styles.memberLeft}>
+                              <View style={[
+                                styles.statusIndicator,
+                                { backgroundColor: member.isActive ? colors.crewLeadPrimary : 'rgba(255, 255, 255, 0.2)' }
+                              ]} />
+                              <View style={styles.memberInfo}>
+                                <Text style={styles.memberName}>{member.employeeName}</Text>
+                                <Text style={[styles.memberStatus, { color: statusColor }]}>
+                                  {statusText}
+                                </Text>
+                                {member.isActive && member.jobSiteName && (
+                                  <View style={styles.jobSiteInfo}>
+                                    <IconSymbol
+                                      ios_icon_name="location.fill"
+                                      android_material_icon_name="location-on"
+                                      size={12}
+                                      color="#b0c4de"
+                                    />
+                                    <Text style={styles.jobSiteText}>{member.jobSiteName}</Text>
+                                  </View>
+                                )}
+                                {member.isActive && clockInTimeText && (
+                                  <Text style={styles.clockInTimeText}>Since {clockInTimeText}</Text>
+                                )}
+                              </View>
+                            </View>
+                            <View style={styles.memberRight}>
+                              <Text style={styles.memberHours}>{memberHoursText}</Text>
+                              <Text style={styles.memberHoursLabel}>today</Text>
+                            </View>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </>
         )}
 
         <View style={styles.refreshNote}>
@@ -424,6 +549,22 @@ const styles = StyleSheet.create({
   memberStatus: {
     fontSize: 13,
     fontWeight: '500',
+    marginBottom: 4,
+  },
+  jobSiteInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  jobSiteText: {
+    fontSize: 12,
+    color: '#b0c4de',
+  },
+  clockInTimeText: {
+    fontSize: 11,
+    color: '#b0c4de',
+    marginTop: 2,
   },
   memberRight: {
     alignItems: 'flex-end',
