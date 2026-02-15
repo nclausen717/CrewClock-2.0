@@ -6,10 +6,11 @@ import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
  * Calculate hours between two dates
+ * If clockOut is null, calculate from clockIn to current time
  */
 function calculateHours(clockIn: Date, clockOut: Date | null): number {
-  if (!clockOut) return 0;
-  const diffMs = new Date(clockOut).getTime() - new Date(clockIn).getTime();
+  const endTime = clockOut ? new Date(clockOut) : new Date();
+  const diffMs = endTime.getTime() - new Date(clockIn).getTime();
   return diffMs / (1000 * 60 * 60); // Convert to hours
 }
 
@@ -147,18 +148,17 @@ export function registerReportsRoutes(app: App) {
         const nextDay = new Date(reportDate);
         nextDay.setDate(nextDay.getDate() + 1);
 
-        // Build where conditions
+        // Build where conditions (includes active entries with null clockOutTime)
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, reportDate),
           lte(timeEntries.clockInTime, nextDay),
-          isNotNull(timeEntries.clockOutTime),
         ];
 
         if (employeeId) {
           whereConditions.push(eq(timeEntries.employeeId, employeeId));
         }
 
-        // Get all time entries for this date
+        // Get all time entries for this date (including active ones)
         const entries = await app.db
           .select({
             id: timeEntries.id,
@@ -294,18 +294,17 @@ export function registerReportsRoutes(app: App) {
         const nextDay = new Date(weekEnd);
         nextDay.setDate(nextDay.getDate() + 1);
 
-        // Build where conditions
+        // Build where conditions (includes active entries with null clockOutTime)
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, weekStart),
           lte(timeEntries.clockInTime, nextDay),
-          isNotNull(timeEntries.clockOutTime),
         ];
 
         if (employeeId) {
           whereConditions.push(eq(timeEntries.employeeId, employeeId));
         }
 
-        // Get all time entries for this week
+        // Get all time entries for this week (including active ones)
         const entries = await app.db
           .select({
             id: timeEntries.id,
@@ -451,18 +450,17 @@ export function registerReportsRoutes(app: App) {
         const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
         const monthEnd = new Date(parseInt(year), parseInt(month), 0);
 
-        // Build where conditions
+        // Build where conditions (includes active entries with null clockOutTime)
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, monthStart),
           lte(timeEntries.clockInTime, monthEnd),
-          isNotNull(timeEntries.clockOutTime),
         ];
 
         if (employeeId) {
           whereConditions.push(eq(timeEntries.employeeId, employeeId));
         }
 
-        // Get all time entries for this month
+        // Get all time entries for this month (including active ones)
         const entries = await app.db
           .select({
             id: timeEntries.id,
@@ -643,11 +641,10 @@ export function registerReportsRoutes(app: App) {
         const nextDay = new Date(reportDate);
         nextDay.setDate(nextDay.getDate() + 1);
 
-        // Build where conditions
+        // Build where conditions (includes active entries with null clockOutTime)
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, reportDate),
           lte(timeEntries.clockInTime, nextDay),
-          isNotNull(timeEntries.clockOutTime),
         ];
 
         if (employeeId) {
@@ -661,6 +658,7 @@ export function registerReportsRoutes(app: App) {
             jobSiteName: jobSites.name,
             clockInTime: timeEntries.clockInTime,
             clockOutTime: timeEntries.clockOutTime,
+            workDescription: timeEntries.workDescription,
           })
           .from(timeEntries)
           .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
@@ -668,12 +666,14 @@ export function registerReportsRoutes(app: App) {
           .where(and(...whereConditions));
 
         // Build CSV
-        const csvLines = ['Employee Name,Job Site,Hours Worked,Date'];
+        const csvLines = ['Employee Name,Job Site,Clock In,Clock Out,Hours Worked,Work Description'];
 
         for (const entry of entries) {
           const hours = calculateHours(entry.clockInTime, entry.clockOutTime);
+          const clockInStr = new Date(entry.clockInTime).toISOString();
+          const clockOutStr = entry.clockOutTime ? new Date(entry.clockOutTime).toISOString() : '';
           csvLines.push(
-            `${escapeCSV(entry.employeeName)},${escapeCSV(entry.jobSiteName)},${Math.round(hours * 100) / 100},${date}`
+            `${escapeCSV(entry.employeeName)},${escapeCSV(entry.jobSiteName)},${clockInStr},${clockOutStr},${Math.round(hours * 100) / 100},${escapeCSV(entry.workDescription || '')}`
           );
         }
 
@@ -725,18 +725,17 @@ export function registerReportsRoutes(app: App) {
         const nextDay = new Date(weekEnd);
         nextDay.setDate(nextDay.getDate() + 1);
 
-        // Build where conditions
+        // Build where conditions (includes active entries with null clockOutTime)
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, weekStart),
           lte(timeEntries.clockInTime, nextDay),
-          isNotNull(timeEntries.clockOutTime),
         ];
 
         if (employeeId) {
           whereConditions.push(eq(timeEntries.employeeId, employeeId));
         }
 
-        // Get all time entries for this week
+        // Get all time entries for this week (including active ones)
         const entries = await app.db
           .select({
             employeeId: timeEntries.employeeId,
@@ -833,18 +832,17 @@ export function registerReportsRoutes(app: App) {
         const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
         const monthEnd = new Date(parseInt(year), parseInt(month), 0);
 
-        // Build where conditions
+        // Build where conditions (includes active entries with null clockOutTime)
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, monthStart),
           lte(timeEntries.clockInTime, monthEnd),
-          isNotNull(timeEntries.clockOutTime),
         ];
 
         if (employeeId) {
           whereConditions.push(eq(timeEntries.employeeId, employeeId));
         }
 
-        // Get all time entries for this month
+        // Get all time entries for this month (including active ones)
         const entries = await app.db
           .select({
             employeeId: timeEntries.employeeId,
