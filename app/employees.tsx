@@ -95,76 +95,39 @@ export default function EmployeesScreen() {
   }, []);
 
   const handleAddEmployee = async () => {
-    console.log('[API] User tapped Add Employee button', { name, email, isCrewLeader });
-    
     if (!name.trim()) {
-      showModal('Missing Information', 'Please enter employee name', 'warning');
+      showModal('Error', 'Enter name', 'warning');
+      return;
+    }
+    if (isCrewLeader && (!email || !username || !password)) {
+      showModal('Error', 'Email, username, password required', 'warning');
       return;
     }
 
-    // Email validation if provided
-    if (email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        showModal('Invalid Email', 'Please enter a valid email address', 'warning');
-        return;
-      }
-    }
-
     setAddingEmployee(true);
-    
     try {
-      // Ensure email is null if empty, not an empty string
-      const emailToSend = email.trim() === '' ? null : email.trim();
-      
-      const response = await authenticatedPost<{ 
-        employee: Employee; 
-        generatedPassword?: string;
-      }>('/api/employees', {
-        name: name.trim(),
-        email: emailToSend,
-        isCrewLeader,
-      });
-
-      console.log('[API] Employee added successfully:', response.employee);
-      
-      // Show success message with generated password if crew leader
-      if (response.generatedPassword) {
-        showModal(
-          'Crew Leader Created',
-          `Employee "${response.employee.name}" has been created as a crew leader.\n\nGenerated Password: ${response.generatedPassword}\n\nPlease save this password and share it with the crew leader.`,
-          'success'
-        );
+      const body: any = {name, isCrewLeader};
+      if (isCrewLeader) {
+        body.email = email;
+        body.username = username;
+        body.password = password;
       } else {
-        showModal('Success', `Employee "${response.employee.name}" has been added successfully.`, 'success');
+        body.phone = phone || null;
+        body.crewId = crewId || null;
       }
-
-      // Reset form
+      
+      await authenticatedPost('/api/employees', body);
+      showModal('Success', `"${name}" added`, 'success');
       setName('');
       setEmail('');
+      setUsername('');
+      setPassword('');
+      setPhone('');
+      setCrewId(null);
       setIsCrewLeader(false);
-      
-      // Refresh list
       fetchEmployees();
     } catch (error: any) {
-      console.error('[API] Failed to add employee:', error);
-      
-      // Parse error message for better user feedback
-      let errorMessage = 'Failed to add employee. Please try again.';
-      
-      if (error?.message) {
-        if (error.message.includes('duplicate') || error.message.includes('already exists')) {
-          errorMessage = 'An employee with this email already exists.';
-        } else if (error.message.includes('email')) {
-          errorMessage = 'Invalid email address.';
-        } else {
-          errorMessage = error.message;
-        }
-      } else if (error?.toString) {
-        errorMessage = error.toString();
-      }
-      
-      showModal('Error', errorMessage, 'error');
+      showModal('Error', error?.message || 'Failed', 'error');
     } finally {
       setAddingEmployee(false);
     }
