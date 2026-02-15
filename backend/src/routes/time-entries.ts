@@ -9,13 +9,13 @@ export function registerTimeEntriesRoutes(app: App) {
 
   /**
    * GET /api/employees/for-clock-in
-   * Returns all employees (not crew leaders) for the crew leader to select
+   * Returns all regular employees plus the authenticated crew leader themselves
    */
   app.fastify.get(
     '/api/employees/for-clock-in',
     {
       schema: {
-        description: 'Get all regular employees for clock-in',
+        description: 'Get all regular employees and authenticated crew leader for clock-in',
         tags: ['time-tracking'],
         response: {
           200: {
@@ -40,13 +40,28 @@ export function registerTimeEntriesRoutes(app: App) {
 
       try {
         // Get all non-crew-leader employees
-        const employeeList = await app.db
+        const regularEmployees = await app.db
           .select({
             id: employees.id,
             name: employees.name,
           })
           .from(employees)
           .where(eq(employees.isCrewLeader, false));
+
+        // Get the authenticated crew leader if they exist as an employee
+        const crewLeader = await app.db
+          .select({
+            id: employees.id,
+            name: employees.name,
+          })
+          .from(employees)
+          .where(eq(employees.id, session.user.id));
+
+        // Combine both lists (crew leader will only be included if they are an employee)
+        const employeeList = [...regularEmployees];
+        if (crewLeader.length > 0) {
+          employeeList.push(crewLeader[0]);
+        }
 
         app.logger.info({ userId: session.user.id, count: employeeList.length }, 'Employees for clock-in fetched');
 
