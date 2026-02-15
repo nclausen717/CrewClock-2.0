@@ -9,13 +9,13 @@ export function registerJobSitesRoutes(app: App) {
 
   /**
    * GET /api/job-sites
-   * Returns all active job sites created by the authenticated admin
+   * Returns all active job sites for authenticated admin or crew lead
    */
   app.fastify.get(
     '/api/job-sites',
     {
       schema: {
-        description: 'Get all active job sites for authenticated admin',
+        description: 'Get all active job sites for authenticated admin or crew lead',
         tags: ['job-sites'],
         response: {
           200: {
@@ -32,6 +32,7 @@ export function registerJobSitesRoutes(app: App) {
             },
           },
           401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
     },
@@ -42,10 +43,10 @@ export function registerJobSitesRoutes(app: App) {
       app.logger.info({ userId: session.user.id }, 'Fetching job sites');
 
       try {
-        // Only admins can view job sites
-        if (session.user.role !== 'admin') {
-          app.logger.warn({ userId: session.user.id }, 'Non-admin user attempted to view job sites');
-          return reply.status(403).send({ error: 'Forbidden' });
+        // Only admins and crew leads can view job sites
+        if (session.user.role !== 'admin' && session.user.role !== 'crew_lead') {
+          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'User without admin or crew lead role attempted to view job sites');
+          return reply.status(403).send({ error: 'Only admins and crew leads can view job sites' });
         }
 
         const sites = await app.db
