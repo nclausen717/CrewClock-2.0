@@ -85,39 +85,28 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   };
 
   const logout = useCallback(async () => {
-    console.log('[Auth] Logout initiated');
-    
+    console.log('[Auth] Logout started');
     try {
       try {
         await authenticatedPost('/api/auth/logout', {});
-        console.log('[Auth] Server logout successful');
       } catch (error) {
-        console.warn('[Auth] Server logout failed (non-critical):', error);
+        console.warn('[Auth] Server logout failed:', error);
       }
-    } catch (error) {
-      console.error('[Auth] Logout error:', error);
     } finally {
-      console.log('[Auth] Clearing local state...');
-      
       await removeToken();
-      console.log('[Auth] Token removed');
-      
       setUser(null);
-      console.log('[Auth] User set to null');
-      
       setIsLoading(false);
-      console.log('[Auth] Loading set to false');
       
-      // DIRECTLY navigate instead of relying on navigation effect
-      console.log('[Auth] About to navigate to /');
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('[Auth] Logout complete, reloading page');
       
-      console.log('[Auth] Navigating now');
-      (router as any).navigate({ name: 'index' });
-      
-      console.log('[Auth] Navigation called');
+      // Force a full page reload to clear everything
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }, 100);
     }
-  }, [router]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, register, logout, checkSession }}>
