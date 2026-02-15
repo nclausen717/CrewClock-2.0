@@ -39,7 +39,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
-  const isLoggingOutRef = useRef(false);
   const hasNavigatedRef = useRef(false);
 
   // Check session on mount
@@ -49,13 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Protected route navigation
   useEffect(() => {
-    // Skip navigation during initial load or logout
-    if (isLoading || isLoggingOutRef.current) {
-      if (isLoading) {
-        console.log('[Auth] Skipping navigation check (loading)');
-      } else {
-        console.log('[Auth] Skipping navigation check (logout in progress)');
-      }
+    // Skip navigation during initial load
+    if (isLoading) {
+      console.log('[Auth] Skipping navigation check (loading)');
       return;
     }
 
@@ -158,17 +153,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = useCallback(async () => {
-    // Prevent multiple logout calls
-    if (isLoggingOutRef.current) {
-      console.log('[Auth] Logout already in progress, skipping...');
-      return;
-    }
-    
-    isLoggingOutRef.current = true;
     console.log('[Auth] Logout initiated...');
     
     try {
-      // Try to notify server first (while we still have the token)
       try {
         await authenticatedPost('/api/auth/logout', {});
         console.log('[Auth] Server logout successful');
@@ -178,32 +165,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('[Auth] Logout error:', error);
     } finally {
-      // ALWAYS clear local state, even if server call fails
       console.log('[Auth] Clearing local auth state...');
       
-      // Clear token
       await removeToken();
       console.log('[Auth] Token removed');
       
-      // Clear user state
+      // Clear user state - this will trigger the navigation effect
       setUser(null);
       console.log('[Auth] User state cleared');
       
-      // Set loading to false to ensure UI updates
+      // Set loading to false
       setIsLoading(false);
       console.log('[Auth] Loading state set to false');
-      
-      // Navigate to welcome screen
-      console.log('[Auth] Navigating to welcome screen...');
-      router.replace('/');
-      
-      // Reset logout flag after a short delay to allow navigation to complete
-      setTimeout(() => {
-        isLoggingOutRef.current = false;
-        console.log('[Auth] Logout complete');
-      }, 100);
     }
-  }, [router]);
+  }, []);
 
   const value: AuthContextType = {
     user,
