@@ -68,7 +68,13 @@ export function registerAuthRoutes(app: App) {
 
         // Verify user belongs to the authenticated company
         if (foundUser.companyId !== companyAuth.company.id) {
-          app.logger.warn({ email, userId: foundUser.id, userCompanyId: foundUser.companyId, authCompanyId: companyAuth.company.id }, 'Crew lead login failed: user does not belong to authenticated company');
+          const logContext = {
+            email,
+            userId: foundUser.id,
+            userCompanyId: foundUser.companyId,
+            authCompanyId: companyAuth.company.id
+          };
+          app.logger.warn(logContext, 'Crew lead login failed: user does not belong to authenticated company');
           return reply.status(401).send({ error: 'Invalid credentials' });
         }
 
@@ -193,7 +199,13 @@ export function registerAuthRoutes(app: App) {
 
         // Verify user belongs to the authenticated company
         if (foundUser.companyId !== companyAuth.company.id) {
-          app.logger.warn({ email, userId: foundUser.id, userCompanyId: foundUser.companyId, authCompanyId: companyAuth.company.id }, 'Admin login failed: user does not belong to authenticated company');
+          const logContext = {
+            email,
+            userId: foundUser.id,
+            userCompanyId: foundUser.companyId,
+            authCompanyId: companyAuth.company.id
+          };
+          app.logger.warn(logContext, 'Admin login failed: user does not belong to authenticated company');
           return reply.status(401).send({ error: 'Invalid credentials' });
         }
 

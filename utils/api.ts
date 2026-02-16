@@ -167,12 +167,16 @@ export const authenticatedPatch = <T = any>(endpoint: string, body: any): Promis
 export const authenticatedDelete = <T = any>(endpoint: string): Promise<T> =>
   apiDelete<T>(endpoint, true);
 
-// Company API methods (with company token)
+// Company API methods (without auth, for login/register)
 export const companyApiPost = <T = any>(endpoint: string, body: any): Promise<T> =>
-  apiCall<T>(endpoint, { method: 'POST', body, requiresCompanyAuth: false });
+  apiCall<T>(endpoint, { method: 'POST', body });
 
-export const companyApiGet = <T = any>(endpoint: string): Promise<T> =>
+// Company authenticated API methods (with company token)
+export const companyAuthApiGet = <T = any>(endpoint: string): Promise<T> =>
   apiCall<T>(endpoint, { method: 'GET', requiresCompanyAuth: true });
+
+export const companyAuthApiPost = <T = any>(endpoint: string, body: any): Promise<T> =>
+  apiCall<T>(endpoint, { method: 'POST', body, requiresCompanyAuth: true });
 
 // Company authenticated API methods (with both company and user tokens)
 export const companyAuthenticatedPost = <T = any>(endpoint: string, body: any): Promise<T> =>

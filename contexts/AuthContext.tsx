@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyApiGet, companyAuthenticatedPost } from '@/utils/api';
+import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyAuthApiGet, companyAuthenticatedPost } from '@/utils/api';
 import { useRouter, useSegments } from 'expo-router';
 
 interface User {
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (companyLoading) return;
+    if (companyLoading || isLoading) return;
     
     const inAuthGroup = segments[0] === '(tabs)';
     const onWelcome = segments.length === 0;
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         setIsLoading(false);
         return;
       }
-      const response = await companyApiGet<{ company: Company }>('/api/auth/company/me');
+      const response = await companyAuthApiGet<{ company: Company }>('/api/auth/company/me');
       setCompany(response.company);
       
       // If company session is valid, check user session

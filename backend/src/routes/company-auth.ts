@@ -294,7 +294,7 @@ export function registerCompanyAuthRoutes(app: App) {
         // Get the company session token from the request
         const authHeader = request.headers['x-company-token'];
         if (!authHeader) {
-          return reply.status(401).send({ error: 'Unauthorized' });
+          return reply.status(401).send({ error: 'Company authentication required' });
         }
 
         const token = authHeader as string;
@@ -306,7 +306,7 @@ export function registerCompanyAuthRoutes(app: App) {
           .where(eq(companySession.token, token));
 
         if (sessions.length === 0) {
-          return reply.status(401).send({ error: 'Invalid session' });
+          return reply.status(401).send({ error: 'Invalid company session' });
         }
 
         const session = sessions[0];
