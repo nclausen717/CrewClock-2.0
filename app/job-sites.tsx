@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.adminPrimary,
+    color: '#ffffff',
     marginBottom: 4,
   },
   statLabel: {
