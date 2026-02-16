@@ -50,6 +50,14 @@ export default function HomeScreen() {
   const isCrewLead = user.role === 'crew_lead';
   const isAdmin = user.role === 'admin';
 
+  console.log('[HomeScreen] RENDER:', { 
+    userName: user.name, 
+    userRole: user.role, 
+    isCrewLead, 
+    isAdmin,
+    timestamp: new Date().toLocaleTimeString()
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen
