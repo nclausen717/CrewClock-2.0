@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { apiPost, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken } from '@/utils/api';
+import { apiPost, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyApiGet, companyAuthenticatedPost } from '@/utils/api';
 import { useRouter, useSegments } from 'expo-router';
 
 interface User {
@@ -10,14 +10,29 @@ interface User {
   role: 'crew_lead' | 'admin';
 }
 
+interface Company {
+  id: string;
+  email: string;
+  name: string;
+  city?: string;
+  phone?: string;
+}
+
 interface AuthContextType {
   user: User | null;
+  company: Company | null;
   isLoading: boolean;
+  companyLoading: boolean;
   isAuthenticated: boolean;
+  isCompanyAuthenticated: boolean;
   login: (email: string, password: string, role: 'crew_lead' | 'admin') => Promise<void>;
   register: (email: string, password: string, name: string, role: 'crew_lead' | 'admin') => Promise<void>;
   logout: () => Promise<void>;
+  companyLogin: (email: string, password: string) => Promise<void>;
+  companyRegister: (email: string, password: string, name: string, city?: string, phone?: string) => Promise<void>;
+  companyLogout: () => Promise<void>;
   checkSession: () => Promise<void>;
+  checkCompanySession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,28 +45,57 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [companyLoading, setCompanyLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    checkSession();
+    checkCompanySession();
   }, []);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (companyLoading) return;
     
     const inAuthGroup = segments[0] === '(tabs)';
     const onWelcome = segments.length === 0;
+    const onCompanyLogin = segments[0] === 'login' && segments[1] === 'company';
+    const onRoleLogin = segments[0] === 'login' && (segments[1] === 'crew-lead' || segments[1] === 'admin');
     
-    if (!user && inAuthGroup) {
-      console.log('[Auth] Redirecting to welcome');
+    if (!company && !onCompanyLogin) {
+      console.log('[Auth] No company session, redirecting to company login');
+      router.replace('/login/company');
+    } else if (company && !user && inAuthGroup) {
+      console.log('[Auth] Company authenticated but no user, redirecting to welcome');
       router.replace('/');
-    } else if (user && onWelcome) {
-      console.log('[Auth] Redirecting to home');
+    } else if (company && user && (onWelcome || onRoleLogin || onCompanyLogin)) {
+      console.log('[Auth] Fully authenticated, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
-  }, [user, segments, isLoading, router]);
+  }, [user, company, segments, isLoading, companyLoading, router]);
+
+  const checkCompanySession = async () => {
+    try {
+      const token = await getCompanyToken();
+      if (!token) {
+        setCompany(null);
+        setCompanyLoading(false);
+        setIsLoading(false);
+        return;
+      }
+      const response = await companyApiGet<{ company: Company }>('/api/auth/company/me');
+      setCompany(response.company);
+      
+      // If company session is valid, check user session
+      await checkSession();
+    } catch (error) {
+      await removeCompanyToken();
+      setCompany(null);
+      setCompanyLoading(false);
+      setIsLoading(false);
+    }
+  };
 
   const checkSession = async () => {
     try {
@@ -59,6 +103,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       if (!token) {
         setUser(null);
         setIsLoading(false);
+        setCompanyLoading(false);
         return;
       }
       const response = await authenticatedGet<{ user: User }>('/api/auth/me');
@@ -68,19 +113,60 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setUser(null);
     } finally {
       setIsLoading(false);
+      setCompanyLoading(false);
     }
   };
 
+  const companyLogin = async (email: string, password: string) => {
+    const response = await companyApiPost<{ company: Company; token: string }>('/api/auth/company/login', { email, password });
+    await saveCompanyToken(response.token);
+    setCompany(response.company);
+    setCompanyLoading(false);
+  };
+
+  const companyRegister = async (email: string, password: string, name: string, city?: string, phone?: string) => {
+    const response = await companyApiPost<{ company: Company }>('/api/auth/company/register', { email, password, name, city, phone });
+    // After registration, automatically log in
+    await companyLogin(email, password);
+  };
+
+  const companyLogout = useCallback(async () => {
+    console.log('[Auth] Company logout started');
+    try {
+      try {
+        await companyApiGet('/api/auth/company/logout');
+      } catch (error) {
+        console.warn('[Auth] Server company logout failed:', error);
+      }
+    } finally {
+      await removeCompanyToken();
+      await removeToken();
+      setCompany(null);
+      setUser(null);
+      setCompanyLoading(false);
+      setIsLoading(false);
+      
+      console.log('[Auth] Company logout complete, reloading page');
+      
+      // Force a full page reload to clear everything
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }, 100);
+    }
+  }, []);
+
   const login = async (email: string, password: string, role: 'crew_lead' | 'admin') => {
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/login' : '/api/auth/admin/login';
-    const response = await apiPost<{ user: User; token: string }>(endpoint, { email, password });
+    const response = await companyAuthenticatedPost<{ user: User; token: string }>(endpoint, { email, password });
     await saveToken(response.token);
     setUser(response.user);
   };
 
   const register = async (email: string, password: string, name: string, role: 'crew_lead' | 'admin') => {
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/register' : '/api/auth/admin/register';
-    const response = await apiPost<{ user: User }>(endpoint, { email, password, name });
+    const response = await companyAuthenticatedPost<{ user: User }>(endpoint, { email, password, name });
     await login(email, password, role);
   };
 
@@ -109,7 +195,22 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, register, logout, checkSession }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      company,
+      isLoading, 
+      companyLoading,
+      isAuthenticated: !!user, 
+      isCompanyAuthenticated: !!company,
+      login, 
+      register, 
+      logout, 
+      companyLogin,
+      companyRegister,
+      companyLogout,
+      checkSession,
+      checkCompanySession
+    }}>
       {children}
     </AuthContext.Provider>
   );
