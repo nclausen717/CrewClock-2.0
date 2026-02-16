@@ -14,32 +14,20 @@ export default function HomeScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // Show loading state while auth is initializing
-  if (isLoading) {
+  // Show loading state while auth is initializing or user data is being fetched
+  if (isLoading || !user) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={[styles.scrollContent, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
           <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // If no user, show loading briefly then return null
-  if (!user) {
-    console.log('[HomeScreen] User is null, should redirect...');
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={[styles.scrollContent, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
-          <ActivityIndicator size="large" color={colors.crewLeadPrimary} />
-          <Text style={{color: '#fff', marginTop: 10}}>Redirecting...</Text>
+          <Text style={{color: '#b0c4de', marginTop: 10}}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   const getRoleColor = () => {
-    return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
+    return user.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
   };
 
   const handleSwitchRole = async () => {
@@ -56,9 +44,11 @@ export default function HomeScreen() {
     }
   };
 
-  const userName = user?.name || 'User';
-  const roleDisplay = user?.role === 'admin' ? 'Admin' : 'Crew Lead';
+  const userName = user.name || 'User';
+  const roleDisplay = user.role === 'admin' ? 'Admin' : 'Crew Lead';
   const roleColor = getRoleColor();
+  const isCrewLead = user.role === 'crew_lead';
+  const isAdmin = user.role === 'admin';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,8 +67,8 @@ export default function HomeScreen() {
             </View>
             <View style={[styles.avatarContainer, { backgroundColor: roleColor }]}>
               <IconSymbol
-                ios_icon_name={user?.role === 'admin' ? 'shield.fill' : 'person.fill'}
-                android_material_icon_name={user?.role === 'admin' ? 'admin-panel-settings' : 'person'}
+                ios_icon_name={isAdmin ? 'shield.fill' : 'person.fill'}
+                android_material_icon_name={isAdmin ? 'admin-panel-settings' : 'person'}
                 size={32}
                 color="#ffffff"
               />
@@ -113,7 +103,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           
-          {user?.role === 'crew_lead' && (
+          {isCrewLead && (
             <>
               <TouchableOpacity 
                 style={styles.actionCard}
@@ -165,7 +155,7 @@ export default function HomeScreen() {
             </>
           )}
 
-          {user?.role === 'admin' && (
+          {isAdmin && (
             <>
               <TouchableOpacity 
                 style={styles.actionCard}
