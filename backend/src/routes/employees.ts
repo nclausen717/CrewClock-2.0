@@ -24,13 +24,13 @@ export function registerEmployeeRoutes(app: App) {
 
   /**
    * GET /api/employees
-   * Returns all employees created by the authenticated admin
+   * Returns all employees for authenticated admin or crew lead
    */
   app.fastify.get(
     '/api/employees',
     {
       schema: {
-        description: 'Get all employees for authenticated admin',
+        description: 'Get all employees for authenticated admin or crew lead',
         tags: ['employees'],
         response: {
           200: {
@@ -47,6 +47,7 @@ export function registerEmployeeRoutes(app: App) {
             },
           },
           401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
     },
@@ -57,10 +58,10 @@ export function registerEmployeeRoutes(app: App) {
       app.logger.info({ userId: session.user.id }, 'Fetching employees');
 
       try {
-        // Only admins can view employees
-        if (session.user.role !== 'admin') {
-          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'Non-admin user attempted to view employees');
-          return reply.status(403).send({ error: 'Forbidden' });
+        // Only admins and crew leads can view employees
+        if (session.user.role !== 'admin' && session.user.role !== 'crew_lead') {
+          app.logger.warn({ userId: session.user.id, role: session.user.role }, 'User without admin or crew lead role attempted to view employees');
+          return reply.status(403).send({ error: 'Only admins and crew leads can view employees' });
         }
 
         const allEmployees = await app.db
