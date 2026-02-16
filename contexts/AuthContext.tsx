@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { apiPost, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyApiGet, companyAuthenticatedPost } from '@/utils/api';
+import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyApiGet, companyAuthenticatedPost } from '@/utils/api';
 import { useRouter, useSegments } from 'expo-router';
 
 interface User {
@@ -134,7 +134,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     console.log('[Auth] Company logout started');
     try {
       try {
-        await companyApiGet('/api/auth/company/logout');
+        const token = await getCompanyToken();
+        if (token) {
+          await apiCall('/api/auth/company/logout', { 
+            method: 'POST', 
+            requiresCompanyAuth: true 
+          });
+        }
       } catch (error) {
         console.warn('[Auth] Server company logout failed:', error);
       }
