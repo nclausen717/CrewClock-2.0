@@ -1,12 +1,43 @@
 import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
 
+// Company table - top-level organization entity
+export const company = pgTable('company', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  password: text('password').notNull(),
+  name: text('name').notNull(),
+  city: text('city'),
+  phone: text('phone'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// Company sessions table - for company authentication
+export const companySession = pgTable('company_session', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id')
+    .notNull()
+    .references(() => company.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Crews table - groups of employees led by a crew leader
 // Note: crewLeaderId is defined below employees due to foreign key ordering
 export const crews = pgTable('crews', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull().unique(),
+  name: text('name').notNull(),
   crewLeaderId: uuid('crew_leader_id'), // nullable - crew leader assigned to this crew
   createdBy: text('created_by').notNull(), // admin user id who created the crew
+  companyId: uuid('company_id')
+    .notNull()
+    .references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
@@ -36,6 +67,9 @@ export const jobSites = pgTable('job_sites', {
   location: text('location').notNull(),
   createdBy: text('created_by').notNull(), // admin user id
   isActive: boolean('is_active').default(true).notNull(),
+  companyId: uuid('company_id')
+    .notNull()
+    .references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
@@ -56,5 +90,8 @@ export const timeEntries = pgTable('time_entries', {
   clockOutTime: timestamp('clock_out_time', { withTimezone: true }),
   clockedInBy: text('clocked_in_by').notNull(), // crew leader user id who clocked them in
   workDescription: text('work_description'), // optional description of work done
+  companyId: uuid('company_id')
+    .notNull()
+    .references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
