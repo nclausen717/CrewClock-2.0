@@ -54,16 +54,16 @@ export default function HomeScreen() {
   const isAdmin = user.role === 'admin';
 
   console.log('[DEBUG] After calculation - isCrewLead:', isCrewLead, 'isAdmin:', isAdmin);
+  console.log('[HomeScreen] RENDER:', { 
+    userName: user.name, 
+    userRole: user.role, 
+    isCrewLead, 
+    isAdmin,
+    timestamp: new Date().toLocaleTimeString()
+  });
 
   return (
     <SafeAreaView style={styles.container}>
-      {console.log('[HomeScreen] RENDER:', { 
-        userName: user.name, 
-        userRole: user.role, 
-        isCrewLead, 
-        isAdmin,
-        timestamp: new Date().toLocaleTimeString()
-      })}
       <Stack.Screen
         options={{
           headerShown: false,
