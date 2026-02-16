@@ -44,8 +44,13 @@ export default function HomeScreen() {
   const userName = user.name || 'User';
   const roleDisplay = user.role === 'admin' ? 'Admin' : 'Crew Lead';
   const roleColor = getRoleColor();
+  
+  console.log('[DEBUG] About to calculate isCrewLead/isAdmin. user object:', user);
+
   const isCrewLead = user.role === 'crew_lead';
   const isAdmin = user.role === 'admin';
+
+  console.log('[DEBUG] After calculation - isCrewLead:', isCrewLead, 'isAdmin:', isAdmin);
 
   return (
     <>
