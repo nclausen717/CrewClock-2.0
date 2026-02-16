@@ -23,6 +23,12 @@ CREATE TABLE "company_session" (
 	CONSTRAINT "company_session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
+-- IMPORTANT: Before running this migration on existing data:
+-- 1. Create at least one company record
+-- 2. Update existing records to reference the company
+-- 3. Then add the NOT NULL constraints below
+-- For new installations, this can be run as-is
+--> statement-breakpoint
 -- Add company_id to user table
 ALTER TABLE "user" ADD COLUMN "company_id" uuid NOT NULL;
 --> statement-breakpoint
