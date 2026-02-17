@@ -127,9 +127,9 @@ export const apiCall = async <T = any>(
       let errorData;
       try {
         errorData = await response.json();
-      } catch (jsonError) {
+      } catch (errorParseFailure) {
         // If JSON parsing fails, use a generic error message
-        console.warn('[API] Failed to parse error response:', jsonError);
+        console.warn('[API] Failed to parse error response:', errorParseFailure);
         throw new Error(`Request failed with status ${response.status}`);
       }
       console.error(`[API] Error ${response.status}:`, errorData);
@@ -140,12 +140,12 @@ export const apiCall = async <T = any>(
     let data;
     try {
       data = await response.json();
-    } catch (error) {
+    } catch (jsonParseError) {
       // Check if the response was expected to contain JSON
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         // If response claims to be JSON but parsing failed, this is an error
-        console.error('[API] Response claimed to be JSON but parsing failed:', error);
+        console.error('[API] Response claimed to be JSON but parsing failed:', jsonParseError);
         throw new Error('Received malformed JSON response from server');
       }
       // If response is empty or not JSON, return empty object
