@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     }
   }, [user, company, segments, isLoading, companyLoading, router]);
 
-  const checkCompanySession = async () => {
+  const checkCompanySession = useCallback(async () => {
     try {
       const token = await getCompanyToken();
       console.log('[Auth] Checking company session, token:', token ? 'present' : 'missing');
@@ -98,9 +98,9 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setCompanyLoading(false);
       setIsLoading(false);
     }
-  };
+  }, [checkSession]);
 
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) {
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setIsLoading(false);
       setCompanyLoading(false);
     }
-  };
+  }, []);
 
   const companyLogin = async (email: string, password: string) => {
     const response = await companyApiPost<{ company: Company; token: string }>('/api/auth/company/login', { email, password });
@@ -168,10 +168,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setTimeout(() => {
         if (typeof window !== 'undefined') {
           window.location.href = '/';
+        } else {
+          // For native platforms, navigate to company login
+          router.replace('/login/company');
         }
       }, 100);
     }
-  }, []);
+  }, [router]);
 
   const login = async (email: string, password: string, role: 'crew_lead' | 'admin') => {
     console.log('[Auth] Login attempt:', { email, role });
@@ -220,10 +223,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setTimeout(() => {
         if (typeof window !== 'undefined') {
           window.location.href = '/';
+        } else {
+          // For native platforms, navigate to company login
+          router.replace('/login/company');
         }
       }, 100);
     }
-  }, []);
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ 
