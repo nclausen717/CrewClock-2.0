@@ -335,6 +335,7 @@ export function registerAuthRoutes(app: App) {
 
         // Create employee record for self-registered crew leader with company association
         // Set createdBy to null to indicate self-registration
+        // Visibility is controlled by companyId
         await app.db.insert(employees).values({
           id: userId,
           name,

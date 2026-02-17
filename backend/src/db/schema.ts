@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, uuid, unique } from 'drizzle-orm/pg-core';
 import { company } from './auth-schema.js';
 
 // Crews table - groups of employees led by a crew leader
@@ -16,7 +16,10 @@ export const crews = pgTable('crews', {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  // Unique constraint: crew names must be unique within a company
+  uniqueNamePerCompany: unique().on(table.name, table.companyId),
+}));
 
 // Employees table - managed by admins
 export const employees = pgTable('employees', {

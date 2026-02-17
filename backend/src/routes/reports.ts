@@ -153,7 +153,6 @@ export function registerReportsRoutes(app: App) {
           gte(timeEntries.clockInTime, reportDate),
           lte(timeEntries.clockInTime, nextDay),
           eq(timeEntries.companyId, session.user.companyId),
-          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {
