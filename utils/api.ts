@@ -16,7 +16,9 @@ export const saveToken = async (token: string): Promise<void> => {
       console.log('[API] Token saved successfully');
     }
   } catch (error) {
-    console.error('[API] Error saving token:', error);
+    if (__DEV__) {
+      console.error('[API] Error saving token:', error);
+    }
   }
 };
 
@@ -25,7 +27,9 @@ export const getToken = async (): Promise<string | null> => {
     const token = await AsyncStorage.getItem(TOKEN_KEY);
     return token;
   } catch (error) {
-    console.error('[API] Error getting token:', error);
+    if (__DEV__) {
+      console.error('[API] Error getting token:', error);
+    }
     return null;
   }
 };
@@ -37,7 +41,9 @@ export const removeToken = async (): Promise<void> => {
       console.log('[API] Token removed successfully');
     }
   } catch (error) {
-    console.error('[API] Error removing token:', error);
+    if (__DEV__) {
+      console.error('[API] Error removing token:', error);
+    }
   }
 };
 
@@ -49,7 +55,9 @@ export const saveCompanyToken = async (token: string): Promise<void> => {
       console.log('[API] Company token saved successfully');
     }
   } catch (error) {
-    console.error('[API] Error saving company token:', error);
+    if (__DEV__) {
+      console.error('[API] Error saving company token:', error);
+    }
   }
 };
 
@@ -61,7 +69,9 @@ export const getCompanyToken = async (): Promise<string | null> => {
     }
     return token;
   } catch (error) {
-    console.error('[API] Error getting company token:', error);
+    if (__DEV__) {
+      console.error('[API] Error getting company token:', error);
+    }
     return null;
   }
 };
@@ -73,7 +83,9 @@ export const removeCompanyToken = async (): Promise<void> => {
       console.log('[API] Company token removed successfully');
     }
   } catch (error) {
-    console.error('[API] Error removing company token:', error);
+    if (__DEV__) {
+      console.error('[API] Error removing company token:', error);
+    }
   }
 };
 
@@ -115,7 +127,9 @@ export const apiCall = async <T = any>(
         console.log('[API] Added Authorization header');
       }
     } else {
-      console.warn('[API] Auth required but no token found');
+      if (__DEV__) {
+        console.warn('[API] Auth required but no token found');
+      }
     }
   }
 
@@ -128,7 +142,9 @@ export const apiCall = async <T = any>(
         console.log('[API] Added X-Company-Token header:', `${companyToken.substring(0, 8)}...`);
       }
     } else {
-      console.warn('[API] Company auth required but no company token found');
+      if (__DEV__) {
+        console.warn('[API] Company auth required but no company token found');
+      }
     }
   }
 
@@ -159,7 +175,9 @@ export const apiCall = async <T = any>(
     
     // Check if response is ok before trying to parse JSON
     if (!response.ok) {
-      console.error(`[API] HTTP Error ${response.status} ${response.statusText}`);
+      if (__DEV__) {
+        console.error(`[API] HTTP Error ${response.status} ${response.statusText}`);
+      }
       
       // Try to parse error response - read text first, then try JSON
       let errorMessage = `Request failed with status ${response.status}`;
@@ -167,7 +185,9 @@ export const apiCall = async <T = any>(
       try {
         const errorData = JSON.parse(text) as { error?: string; message?: string };
         errorMessage = errorData.error || errorData.message || errorMessage;
-        console.error(`[API] Error details:`, errorData);
+        if (__DEV__) {
+          console.error(`[API] Error details:`, errorData);
+        }
       } catch {
         // text is not JSON, use status-based messaging
         if (__DEV__) {
@@ -194,12 +214,16 @@ export const apiCall = async <T = any>(
   } catch (error: any) {
     // If it's already an Error with a message, rethrow it
     if (error instanceof Error) {
-      console.error('[API] Request failed:', error.message);
-      console.error('[API] Error stack:', error.stack);
+      if (__DEV__) {
+        console.error('[API] Request failed:', error.message);
+        console.error('[API] Error stack:', error.stack);
+      }
       throw error;
     }
     
-    console.error('[API] Request failed:', error);
+    if (__DEV__) {
+      console.error('[API] Request failed:', error);
+    }
     throw new Error('Network request failed. Please check your connection.');
   }
 };

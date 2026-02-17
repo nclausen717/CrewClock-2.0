@@ -8,6 +8,9 @@ import { requireCompanyAuth } from '../utils/company-auth.js';
 export function registerAuthRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
+  // TODO: Add rate limiting to authentication endpoints to prevent brute force attacks
+  // Consider using @fastify/rate-limit with appropriate limits for login/registration
+
   /**
    * POST /api/auth/crew-lead/login
    * Crew lead login endpoint - verifies credentials and ensures user has crew_lead role
@@ -287,7 +290,7 @@ export function registerAuthRoutes(app: App) {
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', minLength: 8 },
             name: { type: 'string' },
           },
         },
@@ -312,14 +315,13 @@ export function registerAuthRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { email, password, name, companyId } = request.body as {
+      const { email, password, name } = request.body as {
         email: string;
         password: string;
         name: string;
-        companyId: string;
       };
 
-      app.logger.info({ email, name, companyId }, 'Crew lead registration attempt');
+      app.logger.info({ email, name }, 'Crew lead registration attempt');
 
       // Require company authentication
       const companyAuth = await requireCompanyAuth(app, request, reply);
@@ -378,7 +380,7 @@ export function registerAuthRoutes(app: App) {
           email,
           isCrewLeader: true,
           createdBy: null,
-          companyId,
+          companyId: companyAuth.company.id,
         });
 
         app.logger.info({ userId, email }, 'Crew lead registered successfully');
@@ -419,7 +421,7 @@ export function registerAuthRoutes(app: App) {
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', minLength: 8 },
             name: { type: 'string' },
           },
         },
@@ -443,14 +445,13 @@ export function registerAuthRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { email, password, name, companyId } = request.body as {
+      const { email, password, name } = request.body as {
         email: string;
         password: string;
         name: string;
-        companyId: string;
       };
 
-      app.logger.info({ email, name, companyId }, 'Admin registration attempt');
+      app.logger.info({ email, name }, 'Admin registration attempt');
 
       // Require company authentication
       const companyAuth = await requireCompanyAuth(app, request, reply);

@@ -8,7 +8,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   role: text("role").notNull().default("crew_lead"), // 'crew_lead' or 'admin'
-  companyId: uuid("company_id").references(() => company.id, { onDelete: "cascade" }),
+  companyId: uuid("company_id").notNull().references(() => company.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

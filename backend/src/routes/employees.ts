@@ -1,20 +1,22 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, or, isNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { employees } from '../db/schema.js';
 import { user as userTable, account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
- * Generate a secure random password
+ * Generate a cryptographically secure random password using Node.js crypto
  * 8-12 characters with mix of letters and numbers
+ * Uses crypto.randomInt() and crypto.randomBytes() for secure randomness
  */
 function generatePassword(): string {
-  const length = Math.floor(Math.random() * 5) + 8; // 8-12 characters
+  const length = crypto.randomInt(8, 13); // 8-12 characters (13 is exclusive upper bound)
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let password = '';
+  const randomBytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+    password += chars.charAt(randomBytes[i] % chars.length);
   }
   return password;
 }
@@ -487,8 +489,6 @@ export function registerEmployeeRoutes(app: App) {
           app.logger.warn({ employeeId: id }, 'Employee not found or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
-
-        const existingEmployee = existingEmployees[0];
 
         // Delete employee (cascade will handle related records)
         await app.db.delete(employees).where(eq(employees.id, id));
