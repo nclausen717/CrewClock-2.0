@@ -351,7 +351,7 @@ export default function ClockInScreen() {
             ) : (
               employees.map((employee) => {
                 const isSelected = selectedEmployees.has(employee.id);
-                const isCurrentUser = user?.name === employee.name;
+                const isCurrentUser = user?.id === employee.id;
                 
                 return (
                   <TouchableOpacity

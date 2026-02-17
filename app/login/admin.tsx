@@ -11,7 +11,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
-  ImageSourcePropType,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,13 +18,6 @@ import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/ui/Modal';
-
-// Helper to resolve image sources (handles both local and remote URLs)
-function resolveImageSource(source: string | number | ImageSourcePropType | undefined): ImageSourcePropType {
-  if (!source) return { uri: '' };
-  if (typeof source === 'string') return { uri: source };
-  return source as ImageSourcePropType;
-}
 
 export default function AdminLoginScreen() {
   const router = useRouter();
@@ -48,7 +40,7 @@ export default function AdminLoginScreen() {
   };
 
   const handleSubmit = async () => {
-    console.log('User tapped submit button', { isLogin, email });
+    if (__DEV__) console.log('User tapped submit button', { isLogin, email });
     
     if (!email || !password || (!isLogin && !name)) {
       showModal('Missing Information', 'Please fill in all fields', 'error');
@@ -68,16 +60,16 @@ export default function AdminLoginScreen() {
       if (isLogin) {
         // Login
         await login(email, password, 'admin');
-        console.log('Authentication successful, navigating to admin dashboard');
+        if (__DEV__) console.log('Authentication successful, navigating to admin dashboard');
         router.replace('/(tabs)/(home)/');
       } else {
         // Register
         await register(email, password, name, 'admin');
-        console.log('Registration successful, navigating to admin dashboard');
+        if (__DEV__) console.log('Registration successful, navigating to admin dashboard');
         router.replace('/(tabs)/(home)/');
       }
     } catch (error: any) {
-      console.error('Authentication error:', error);
+      if (__DEV__) console.error('Authentication error:', error);
       const errorMessage = error.message || 'Authentication failed. Please try again.';
       showModal('Authentication Failed', errorMessage, 'error');
     } finally {
@@ -86,7 +78,7 @@ export default function AdminLoginScreen() {
   };
 
   const toggleMode = () => {
-    console.log('User toggled between login and register');
+    if (__DEV__) console.log('User toggled between login and register');
     setIsLogin(!isLogin);
   };
 

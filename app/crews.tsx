@@ -14,7 +14,7 @@ import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from '@/utils/api';
+import { authenticatedGet, authenticatedPost, authenticatedDelete } from '@/utils/api';
 import { Modal } from '@/components/ui/Modal';
 
 interface Crew {
@@ -191,21 +191,6 @@ export default function CrewsScreen() {
       },
       'Delete'
     );
-  };
-
-  const handleChangeCrewLeader = (crewId: string, crewName: string, currentLeaderId: string | null) => {
-    console.log('[API] User tapped change crew leader for:', crewName);
-    
-    // Show crew leader picker modal
-    showModal(
-      'Change Crew Leader',
-      `Select a new crew leader for "${crewName}"`,
-      'info',
-      undefined,
-      'Cancel'
-    );
-    
-    // TODO: Implement crew leader picker UI
   };
 
   const toggleCrewExpansion = (crewId: string) => {
@@ -398,18 +383,6 @@ export default function CrewsScreen() {
                   {isExpanded && (
                     <View style={styles.crewExpandedContent}>
                       <View style={styles.crewActionButtons}>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => handleChangeCrewLeader(crew.id, crew.name, crew.crewLeaderId)}
-                        >
-                          <IconSymbol
-                            ios_icon_name="person.badge.key.fill"
-                            android_material_icon_name="person"
-                            size={18}
-                            color={colors.crewLeadPrimary}
-                          />
-                          <Text style={styles.actionButtonText}>Change Leader</Text>
-                        </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.actionButton, styles.deleteActionButton]}
                           onPress={() => handleDeleteCrew(crew.id, crew.name)}

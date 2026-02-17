@@ -142,7 +142,7 @@ export const testAllEndpoints = async () => {
 };
 
 // Export for easy console access
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && __DEV__) {
   (window as any).testApi = {
     testCrewLeadRegister,
     testCrewLeadLogin,

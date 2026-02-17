@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, isNull, or, count, gte, lte } from 'drizzle-orm';
+import { eq, and, isNull, count, gte, lte, sql, inArray } from 'drizzle-orm';
 import { crews, employees, timeEntries, jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
@@ -48,61 +48,30 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get all crews for the authenticated company
-        const allCrews = await app.db
+        // Get all crews with leader names and member counts in a single query using JOINs
+        const crewsWithDetails = await app.db
           .select({
             id: crews.id,
             name: crews.name,
             crewLeaderId: crews.crewLeaderId,
+            crewLeaderName: employees.name,
+            memberCount: sql<number>`(
+              SELECT COUNT(*)::int 
+              FROM ${employees} 
+              WHERE ${employees.crewId} = ${crews.id} 
+              AND ${employees.companyId} = ${session.user.companyId}
+            )`,
             createdAt: crews.createdAt,
           })
           .from(crews)
+          .leftJoin(
+            employees,
+            and(
+              eq(crews.crewLeaderId, employees.id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          )
           .where(eq(crews.companyId, session.user.companyId));
-
-        // Fetch crew leader names and member counts
-        const crewsWithDetails = await Promise.all(
-          allCrews.map(async (crew) => {
-            let crewLeaderName = null;
-
-            if (crew.crewLeaderId) {
-              const leader = await app.db
-                .select({ name: employees.name })
-                .from(employees)
-                .where(
-                  and(
-                    eq(employees.id, crew.crewLeaderId),
-                    eq(employees.companyId, session.user.companyId)
-                  )
-                );
-
-              if (leader.length > 0) {
-                crewLeaderName = leader[0].name;
-              }
-            }
-
-            // Count members
-            const memberCountResult = await app.db
-              .select({ count: count() })
-              .from(employees)
-              .where(
-                and(
-                  eq(employees.crewId, crew.id),
-                  eq(employees.companyId, session.user.companyId)
-                )
-              );
-
-            const memberCount = memberCountResult[0]?.count || 0;
-
-            return {
-              id: crew.id,
-              name: crew.name,
-              crewLeaderId: crew.crewLeaderId,
-              crewLeaderName,
-              memberCount,
-              createdAt: crew.createdAt,
-            };
-          })
-        );
 
         app.logger.info({ userId: session.user.id, count: crewsWithDetails.length }, 'Crews fetched');
 
@@ -463,8 +432,6 @@ export function registerCrewRoutes(app: App) {
           app.logger.warn({ crewId: id }, 'Crew not found or access denied');
           return reply.status(404).send({ error: 'Crew not found' });
         }
-
-        const existingCrew = existingCrews[0];
 
         // Set employees' crewId to null (cascade behavior) - only for employees in the same company
         await app.db
@@ -882,6 +849,24 @@ export function registerCrewRoutes(app: App) {
           .from(crews)
           .where(eq(crews.companyId, session.user.companyId));
 
+        // Get all crew leaders in a single query to avoid N+1
+        const crewLeaderIds = allCrews.map(c => c.crewLeaderId).filter(Boolean) as string[];
+        const crewLeaders = crewLeaderIds.length > 0 ? await app.db
+          .select({
+            id: employees.id,
+            name: employees.name,
+          })
+          .from(employees)
+          .where(
+            and(
+              inArray(employees.id, crewLeaderIds),
+              eq(employees.companyId, session.user.companyId)
+            )
+          ) : [];
+        
+        // Create a lookup map for crew leaders
+        const crewLeaderMap = new Map(crewLeaders.map(leader => [leader.id, leader.name]));
+
         // Get today's date range (UTC)
         const todayStart = new Date();
         todayStart.setUTCHours(0, 0, 0, 0);
@@ -891,23 +876,7 @@ export function registerCrewRoutes(app: App) {
         // Build dashboard data
         const dashboardData = await Promise.all(
           allCrews.map(async (crew) => {
-            let crewLeaderName = null;
-
-            if (crew.crewLeaderId) {
-              const leader = await app.db
-                .select({ name: employees.name })
-                .from(employees)
-                .where(
-                  and(
-                    eq(employees.id, crew.crewLeaderId),
-                    eq(employees.companyId, session.user.companyId)
-                  )
-                );
-
-              if (leader.length > 0) {
-                crewLeaderName = leader[0].name;
-              }
-            }
+            const crewLeaderName = crew.crewLeaderId ? crewLeaderMap.get(crew.crewLeaderId) || null : null;
 
             // Get crew members from the same company
             const crewMembers = await app.db
