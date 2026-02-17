@@ -165,7 +165,7 @@ export const apiCall = async <T = any>(
       let errorMessage = `Request failed with status ${response.status}`;
       const text = await response.text();
       try {
-        const errorData = JSON.parse(text);
+        const errorData = JSON.parse(text) as { error?: string; message?: string };
         errorMessage = errorData.error || errorData.message || errorMessage;
         console.error(`[API] Error details:`, errorData);
       } catch {
