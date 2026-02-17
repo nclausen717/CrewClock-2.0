@@ -152,6 +152,7 @@ export function registerReportsRoutes(app: App) {
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, reportDate),
           lte(timeEntries.clockInTime, nextDay),
+          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {
@@ -298,6 +299,7 @@ export function registerReportsRoutes(app: App) {
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, weekStart),
           lte(timeEntries.clockInTime, nextDay),
+          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {
@@ -454,6 +456,7 @@ export function registerReportsRoutes(app: App) {
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, monthStart),
           lte(timeEntries.clockInTime, monthEnd),
+          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {
@@ -645,6 +648,7 @@ export function registerReportsRoutes(app: App) {
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, reportDate),
           lte(timeEntries.clockInTime, nextDay),
+          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {
@@ -729,6 +733,7 @@ export function registerReportsRoutes(app: App) {
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, weekStart),
           lte(timeEntries.clockInTime, nextDay),
+          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {
@@ -836,6 +841,7 @@ export function registerReportsRoutes(app: App) {
         const whereConditions: any[] = [
           gte(timeEntries.clockInTime, monthStart),
           lte(timeEntries.clockInTime, monthEnd),
+          eq(timeEntries.companyId, session.user.companyId),
         ];
 
         if (employeeId) {

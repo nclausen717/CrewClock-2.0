@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
@@ -57,7 +57,8 @@ export function registerJobSitesRoutes(app: App) {
             isActive: jobSites.isActive,
             createdAt: jobSites.createdAt,
           })
-          .from(jobSites);
+          .from(jobSites)
+          .where(eq(jobSites.companyId, session.user.companyId));
 
         app.logger.info({ userId: session.user.id, count: sites.length }, 'Job sites fetched');
 
@@ -124,6 +125,7 @@ export function registerJobSitesRoutes(app: App) {
             name,
             location,
             createdBy: session.user.id,
+            companyId: session.user.companyId,
           })
           .returning();
 
@@ -205,21 +207,23 @@ export function registerJobSitesRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing job site
-        const existingSites = await app.db.select().from(jobSites).where(eq(jobSites.id, id));
+        // Get existing job site and verify company ownership
+        const existingSites = await app.db
+          .select()
+          .from(jobSites)
+          .where(
+            and(
+              eq(jobSites.id, id),
+              eq(jobSites.companyId, session.user.companyId)
+            )
+          );
 
         if (existingSites.length === 0) {
-          app.logger.warn({ jobSiteId: id }, 'Job site not found');
+          app.logger.warn({ jobSiteId: id }, 'Job site not found or access denied');
           return reply.status(404).send({ error: 'Job site not found' });
         }
 
         const existingSite = existingSites[0];
-
-        // Check if the current admin created this job site
-        if (existingSite.createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, jobSiteId: id }, 'Unauthorized job site update');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
 
         // Update job site
         const [updatedSite] = await app.db
@@ -288,21 +292,23 @@ export function registerJobSitesRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing job site
-        const existingSites = await app.db.select().from(jobSites).where(eq(jobSites.id, id));
+        // Get existing job site and verify company ownership
+        const existingSites = await app.db
+          .select()
+          .from(jobSites)
+          .where(
+            and(
+              eq(jobSites.id, id),
+              eq(jobSites.companyId, session.user.companyId)
+            )
+          );
 
         if (existingSites.length === 0) {
-          app.logger.warn({ jobSiteId: id }, 'Job site not found');
+          app.logger.warn({ jobSiteId: id }, 'Job site not found or access denied');
           return reply.status(404).send({ error: 'Job site not found' });
         }
 
         const existingSite = existingSites[0];
-
-        // Check if the current admin created this job site
-        if (existingSite.createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, jobSiteId: id }, 'Unauthorized job site deletion');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
 
         // Delete job site (cascade will handle related records)
         await app.db.delete(jobSites).where(eq(jobSites.id, id));

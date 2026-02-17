@@ -73,12 +73,7 @@ export function registerEmployeeRoutes(app: App) {
             createdAt: employees.createdAt,
           })
           .from(employees)
-          .where(
-            or(
-              eq(employees.createdBy, session.user.id),
-              isNull(employees.createdBy)
-            )
-          );
+          .where(eq(employees.companyId, session.user.companyId));
 
         app.logger.info({ userId: session.user.id, count: allEmployees.length }, 'Employees fetched');
 
@@ -190,12 +185,13 @@ export function registerEmployeeRoutes(app: App) {
           generatedPassword = password || generatePassword();
 
           try {
-            // Create user account
+            // Create user account with company association
             await app.db.insert(userTable).values({
               id: userId,
               email: email!,
               name,
               role: 'crew_lead',
+              companyId: session.user.companyId,
             });
 
             // Hash password and create account record
@@ -212,7 +208,7 @@ export function registerEmployeeRoutes(app: App) {
                 password: hashedPassword,
               });
 
-            // Create employee record
+            // Create employee record with company association
             const [employee] = await app.db
               .insert(employees)
               .values({
@@ -221,6 +217,7 @@ export function registerEmployeeRoutes(app: App) {
                 email: email!,
                 isCrewLeader: true,
                 createdBy: session.user.id,
+                companyId: session.user.companyId,
               })
               .returning();
 
@@ -238,7 +235,7 @@ export function registerEmployeeRoutes(app: App) {
             throw error;
           }
         } else {
-          // For regular employees, just create employee record
+          // For regular employees, just create employee record with company association
           try {
             const [employee] = await app.db
               .insert(employees)
@@ -247,6 +244,7 @@ export function registerEmployeeRoutes(app: App) {
                 email: email || null,
                 isCrewLeader: false,
                 createdBy: session.user.id,
+                companyId: session.user.companyId,
               })
               .returning();
 
@@ -344,28 +342,23 @@ export function registerEmployeeRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing employee
+        // Get existing employee and verify company ownership
         const existingEmployees = await app.db
           .select()
           .from(employees)
-          .where(eq(employees.id, id));
+          .where(
+            and(
+              eq(employees.id, id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         if (existingEmployees.length === 0) {
-          app.logger.warn({ employeeId: id }, 'Employee not found');
+          app.logger.warn({ employeeId: id }, 'Employee not found or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
 
         const existingEmployee = existingEmployees[0];
-
-        // Check authorization: admin can update if they created the employee,
-        // or if it's a self-registered crew leader (createdBy is null)
-        const isAdminOwner = existingEmployee.createdBy === session.user.id;
-        const isSelfRegistered = existingEmployee.createdBy === null;
-
-        if (!isAdminOwner && !isSelfRegistered) {
-          app.logger.warn({ userId: session.user.id, employeeId: id }, 'Unauthorized employee update');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
 
         // Check if email is already used (if changing email)
         if (email && email !== existingEmployee.email) {
@@ -481,28 +474,23 @@ export function registerEmployeeRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing employee
+        // Get existing employee and verify company ownership
         const existingEmployees = await app.db
           .select()
           .from(employees)
-          .where(eq(employees.id, id));
+          .where(
+            and(
+              eq(employees.id, id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         if (existingEmployees.length === 0) {
-          app.logger.warn({ employeeId: id }, 'Employee not found');
+          app.logger.warn({ employeeId: id }, 'Employee not found or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
 
         const existingEmployee = existingEmployees[0];
-
-        // Check authorization: admin can delete if they created the employee,
-        // or if it's a self-registered crew leader (createdBy is null)
-        const isAdminOwner = existingEmployee.createdBy === session.user.id;
-        const isSelfRegistered = existingEmployee.createdBy === null;
-
-        if (!isAdminOwner && !isSelfRegistered) {
-          app.logger.warn({ userId: session.user.id, employeeId: id }, 'Unauthorized employee deletion');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
 
         // Delete employee (cascade will handle related records)
         await app.db.delete(employees).where(eq(employees.id, id));
@@ -563,14 +551,19 @@ export function registerEmployeeRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing employee
+        // Get existing employee and verify company ownership
         const existingEmployees = await app.db
           .select()
           .from(employees)
-          .where(eq(employees.id, id));
+          .where(
+            and(
+              eq(employees.id, id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         if (existingEmployees.length === 0) {
-          app.logger.warn({ employeeId: id }, 'Employee not found for password reset');
+          app.logger.warn({ employeeId: id }, 'Employee not found for password reset or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
 
@@ -580,14 +573,6 @@ export function registerEmployeeRoutes(app: App) {
         if (!existingEmployee.isCrewLeader) {
           app.logger.warn({ employeeId: id }, 'Password reset attempted on non-crew-leader');
           return reply.status(400).send({ error: 'Only crew leaders can have their password reset' });
-        }
-
-        // Check authorization: admin can only reset if they created the employee
-        const isAdminOwner = existingEmployee.createdBy === session.user.id;
-
-        if (!isAdminOwner) {
-          app.logger.warn({ userId: session.user.id, employeeId: id }, 'Unauthorized password reset attempt');
-          return reply.status(403).send({ error: 'Forbidden' });
         }
 
         // Generate new password

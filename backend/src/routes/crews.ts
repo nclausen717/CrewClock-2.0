@@ -50,7 +50,7 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get all crews with member count
+        // Get all crews for the authenticated company
         const allCrews = await app.db
           .select({
             id: crews.id,
@@ -59,7 +59,7 @@ export function registerCrewRoutes(app: App) {
             createdAt: crews.createdAt,
           })
           .from(crews)
-          .where(eq(crews.createdBy, session.user.id));
+          .where(eq(crews.companyId, session.user.companyId));
 
         // Fetch crew leader names and member counts
         const crewsWithDetails = await Promise.all(
@@ -70,7 +70,12 @@ export function registerCrewRoutes(app: App) {
               const leader = await app.db
                 .select({ name: employees.name })
                 .from(employees)
-                .where(eq(employees.id, crew.crewLeaderId));
+                .where(
+                  and(
+                    eq(employees.id, crew.crewLeaderId),
+                    eq(employees.companyId, session.user.companyId)
+                  )
+                );
 
               if (leader.length > 0) {
                 crewLeaderName = leader[0].name;
@@ -81,7 +86,12 @@ export function registerCrewRoutes(app: App) {
             const memberCountResult = await app.db
               .select({ count: count() })
               .from(employees)
-              .where(eq(employees.crewId, crew.id));
+              .where(
+                and(
+                  eq(employees.crewId, crew.id),
+                  eq(employees.companyId, session.user.companyId)
+                )
+              );
 
             const memberCount = memberCountResult[0]?.count || 0;
 
@@ -161,12 +171,17 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // If crewLeaderId is provided, validate it exists and is a crew leader
+        // If crewLeaderId is provided, validate it exists and is a crew leader in the same company
         if (crewLeaderId) {
           const leader = await app.db
             .select()
             .from(employees)
-            .where(eq(employees.id, crewLeaderId));
+            .where(
+              and(
+                eq(employees.id, crewLeaderId),
+                eq(employees.companyId, session.user.companyId)
+              )
+            );
 
           if (leader.length === 0) {
             app.logger.warn({ crewLeaderId }, 'Crew leader not found');
@@ -179,13 +194,14 @@ export function registerCrewRoutes(app: App) {
           }
         }
 
-        // Create crew
+        // Create crew with company_id
         const [newCrew] = await app.db
           .insert(crews)
           .values({
             name,
             crewLeaderId: crewLeaderId || null,
             createdBy: session.user.id,
+            companyId: session.user.companyId,
           })
           .returning();
 
@@ -194,7 +210,12 @@ export function registerCrewRoutes(app: App) {
           const leader = await app.db
             .select({ name: employees.name })
             .from(employees)
-            .where(eq(employees.id, crewLeaderId));
+            .where(
+              and(
+                eq(employees.id, crewLeaderId),
+                eq(employees.companyId, session.user.companyId)
+              )
+            );
 
           if (leader.length > 0) {
             crewLeaderName = leader[0].name;
@@ -286,28 +307,35 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing crew
-        const existingCrews = await app.db.select().from(crews).where(eq(crews.id, id));
+        // Get existing crew and verify company ownership
+        const existingCrews = await app.db
+          .select()
+          .from(crews)
+          .where(
+            and(
+              eq(crews.id, id),
+              eq(crews.companyId, session.user.companyId)
+            )
+          );
 
         if (existingCrews.length === 0) {
-          app.logger.warn({ crewId: id }, 'Crew not found');
+          app.logger.warn({ crewId: id }, 'Crew not found or access denied');
           return reply.status(404).send({ error: 'Crew not found' });
         }
 
         const existingCrew = existingCrews[0];
 
-        // Check if admin created this crew
-        if (existingCrew.createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, crewId: id }, 'Unauthorized crew update');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
-
-        // If crewLeaderId is provided, validate it
+        // If crewLeaderId is provided, validate it and ensure it's in the same company
         if (crewLeaderId) {
           const leader = await app.db
             .select()
             .from(employees)
-            .where(eq(employees.id, crewLeaderId));
+            .where(
+              and(
+                eq(employees.id, crewLeaderId),
+                eq(employees.companyId, session.user.companyId)
+              )
+            );
 
           if (leader.length === 0) {
             app.logger.warn({ crewLeaderId }, 'Crew leader not found');
@@ -335,18 +363,28 @@ export function registerCrewRoutes(app: App) {
           const leader = await app.db
             .select({ name: employees.name })
             .from(employees)
-            .where(eq(employees.id, updatedCrew.crewLeaderId));
+            .where(
+              and(
+                eq(employees.id, updatedCrew.crewLeaderId),
+                eq(employees.companyId, session.user.companyId)
+              )
+            );
 
           if (leader.length > 0) {
             crewLeaderName = leader[0].name;
           }
         }
 
-        // Count members
+        // Count members in the same company
         const memberCountResult = await app.db
           .select({ count: count() })
           .from(employees)
-          .where(eq(employees.crewId, id));
+          .where(
+            and(
+              eq(employees.crewId, id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         const memberCount = memberCountResult[0]?.count || 0;
 
@@ -412,27 +450,34 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get existing crew
-        const existingCrews = await app.db.select().from(crews).where(eq(crews.id, id));
+        // Get existing crew and verify company ownership
+        const existingCrews = await app.db
+          .select()
+          .from(crews)
+          .where(
+            and(
+              eq(crews.id, id),
+              eq(crews.companyId, session.user.companyId)
+            )
+          );
 
         if (existingCrews.length === 0) {
-          app.logger.warn({ crewId: id }, 'Crew not found');
+          app.logger.warn({ crewId: id }, 'Crew not found or access denied');
           return reply.status(404).send({ error: 'Crew not found' });
         }
 
         const existingCrew = existingCrews[0];
 
-        // Check if admin created this crew
-        if (existingCrew.createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, crewId: id }, 'Unauthorized crew deletion');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
-
-        // Set employees' crewId to null (cascade behavior)
+        // Set employees' crewId to null (cascade behavior) - only for employees in the same company
         await app.db
           .update(employees)
           .set({ crewId: null })
-          .where(eq(employees.crewId, id));
+          .where(
+            and(
+              eq(employees.crewId, id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         // Delete crew
         await app.db.delete(crews).where(eq(crews.id, id));
@@ -497,20 +542,23 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Verify crew exists and belongs to admin
-        const crewList = await app.db.select().from(crews).where(eq(crews.id, id));
+        // Verify crew exists and belongs to the same company
+        const crewList = await app.db
+          .select()
+          .from(crews)
+          .where(
+            and(
+              eq(crews.id, id),
+              eq(crews.companyId, session.user.companyId)
+            )
+          );
 
         if (crewList.length === 0) {
-          app.logger.warn({ crewId: id }, 'Crew not found');
+          app.logger.warn({ crewId: id }, 'Crew not found or access denied');
           return reply.status(404).send({ error: 'Crew not found' });
         }
 
-        if (crewList[0].createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, crewId: id }, 'Unauthorized crew access');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
-
-        // Get members
+        // Get members from the same company
         const members = await app.db
           .select({
             id: employees.id,
@@ -518,7 +566,12 @@ export function registerCrewRoutes(app: App) {
             isCrewLeader: employees.isCrewLeader,
           })
           .from(employees)
-          .where(eq(employees.crewId, id));
+          .where(
+            and(
+              eq(employees.crewId, id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         app.logger.info({ userId: session.user.id, crewId: id, count: members.length }, 'Crew members fetched');
 
@@ -587,24 +640,35 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Verify crew exists and belongs to admin
-        const crewList = await app.db.select().from(crews).where(eq(crews.id, id));
+        // Verify crew exists and belongs to the same company
+        const crewList = await app.db
+          .select()
+          .from(crews)
+          .where(
+            and(
+              eq(crews.id, id),
+              eq(crews.companyId, session.user.companyId)
+            )
+          );
 
         if (crewList.length === 0) {
-          app.logger.warn({ crewId: id }, 'Crew not found');
+          app.logger.warn({ crewId: id }, 'Crew not found or access denied');
           return reply.status(404).send({ error: 'Crew not found' });
         }
 
-        if (crewList[0].createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, crewId: id }, 'Unauthorized crew access');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
-
-        // Verify employee exists
-        const empList = await app.db.select().from(employees).where(eq(employees.id, employeeId));
+        // Verify employee exists and belongs to the same company
+        const empList = await app.db
+          .select()
+          .from(employees)
+          .where(
+            and(
+              eq(employees.id, employeeId),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         if (empList.length === 0) {
-          app.logger.warn({ employeeId }, 'Employee not found');
+          app.logger.warn({ employeeId }, 'Employee not found or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
 
@@ -677,24 +741,35 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Verify crew exists and belongs to admin
-        const crewList = await app.db.select().from(crews).where(eq(crews.id, id));
+        // Verify crew exists and belongs to the same company
+        const crewList = await app.db
+          .select()
+          .from(crews)
+          .where(
+            and(
+              eq(crews.id, id),
+              eq(crews.companyId, session.user.companyId)
+            )
+          );
 
         if (crewList.length === 0) {
-          app.logger.warn({ crewId: id }, 'Crew not found');
+          app.logger.warn({ crewId: id }, 'Crew not found or access denied');
           return reply.status(404).send({ error: 'Crew not found' });
         }
 
-        if (crewList[0].createdBy !== session.user.id) {
-          app.logger.warn({ userId: session.user.id, crewId: id }, 'Unauthorized crew access');
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
-
-        // Verify employee exists and is in crew
-        const empList = await app.db.select().from(employees).where(eq(employees.id, employeeId));
+        // Verify employee exists, belongs to the same company, and is in the crew
+        const empList = await app.db
+          .select()
+          .from(employees)
+          .where(
+            and(
+              eq(employees.id, employeeId),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         if (empList.length === 0) {
-          app.logger.warn({ employeeId }, 'Employee not found');
+          app.logger.warn({ employeeId }, 'Employee not found or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
 
@@ -799,7 +874,7 @@ export function registerCrewRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Get all crews created by this admin
+        // Get all crews for the authenticated company
         const allCrews = await app.db
           .select({
             id: crews.id,
@@ -807,7 +882,7 @@ export function registerCrewRoutes(app: App) {
             crewLeaderId: crews.crewLeaderId,
           })
           .from(crews)
-          .where(eq(crews.createdBy, session.user.id));
+          .where(eq(crews.companyId, session.user.companyId));
 
         // Get today's date range (UTC)
         const todayStart = new Date();
@@ -824,26 +899,36 @@ export function registerCrewRoutes(app: App) {
               const leader = await app.db
                 .select({ name: employees.name })
                 .from(employees)
-                .where(eq(employees.id, crew.crewLeaderId));
+                .where(
+                  and(
+                    eq(employees.id, crew.crewLeaderId),
+                    eq(employees.companyId, session.user.companyId)
+                  )
+                );
 
               if (leader.length > 0) {
                 crewLeaderName = leader[0].name;
               }
             }
 
-            // Get crew members
+            // Get crew members from the same company
             const crewMembers = await app.db
               .select({
                 id: employees.id,
                 name: employees.name,
               })
               .from(employees)
-              .where(eq(employees.crewId, crew.id));
+              .where(
+                and(
+                  eq(employees.crewId, crew.id),
+                  eq(employees.companyId, session.user.companyId)
+                )
+              );
 
             // Get today's time entries for each member
             const members = await Promise.all(
               crewMembers.map(async (member) => {
-                // Get all entries for today
+                // Get all entries for today for the employee in the same company
                 const todayEntries = await app.db
                   .select({
                     clockInTime: timeEntries.clockInTime,
@@ -853,6 +938,7 @@ export function registerCrewRoutes(app: App) {
                   .where(
                     and(
                       eq(timeEntries.employeeId, member.id),
+                      eq(timeEntries.companyId, session.user.companyId),
                       gte(timeEntries.clockInTime, todayStart),
                       lte(timeEntries.clockInTime, todayEnd)
                     )
@@ -900,19 +986,24 @@ export function registerCrewRoutes(app: App) {
           })
         );
 
-        // Get individual employees (not assigned to any crew) with active time entries today
+        // Get individual employees (not assigned to any crew) from the same company
         const individualEmpsData = await app.db
           .select({
             employeeId: employees.id,
             employeeName: employees.name,
           })
           .from(employees)
-          .where(and(isNull(employees.crewId)));
+          .where(
+            and(
+              isNull(employees.crewId),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         // Filter and build individual employee dashboard data
         const individualEmployees = await Promise.all(
           individualEmpsData.map(async (emp) => {
-            // Get today's time entries with job site info
+            // Get today's time entries with job site info for the same company
             const todayEntries = await app.db
               .select({
                 id: timeEntries.id,
@@ -926,6 +1017,7 @@ export function registerCrewRoutes(app: App) {
               .where(
                 and(
                   eq(timeEntries.employeeId, emp.employeeId),
+                  eq(timeEntries.companyId, session.user.companyId),
                   gte(timeEntries.clockInTime, todayStart),
                   lte(timeEntries.clockInTime, todayEnd)
                 )

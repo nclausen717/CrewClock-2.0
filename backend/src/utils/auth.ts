@@ -4,8 +4,8 @@ import { eq } from 'drizzle-orm';
 import { user } from '../db/auth-schema.js';
 
 /**
- * Enhanced authentication that includes the user's role
- * Fetches the user from the database to ensure role is available
+ * Enhanced authentication that includes the user's role and companyId
+ * Fetches the user from the database to ensure role and companyId are available
  */
 export async function requireAuthWithRole(
   app: App,
@@ -17,7 +17,7 @@ export async function requireAuthWithRole(
 
   if (!session) return null;
 
-  // Fetch the user to ensure we have the role
+  // Fetch the user to ensure we have the role and companyId
   const users = await app.db.select().from(user).where(eq(user.id, session.user.id));
 
   if (users.length === 0) {
@@ -27,12 +27,13 @@ export async function requireAuthWithRole(
 
   const userData = users[0];
 
-  // Return enhanced session with role
+  // Return enhanced session with role and companyId
   return {
     ...session,
     user: {
       ...session.user,
       role: userData.role,
+      companyId: userData.companyId,
     },
   };
 }
