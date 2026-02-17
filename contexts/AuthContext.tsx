@@ -51,10 +51,68 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const router = useRouter();
   const segments = useSegments();
 
+  // Check session functions - defined with useCallback but NO dependencies to avoid circular loops
+  const checkSession = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      const response = await authenticatedGet<{ user: User }>('/api/auth/me');
+      setUser(response.user);
+    } catch (error) {
+      await removeToken();
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty dependency array - this function doesn't depend on anything
+
+  const checkCompanySession = useCallback(async () => {
+    try {
+      const token = await getCompanyToken();
+      if (__DEV__) console.log('[Auth] Checking company session, token:', token ? 'present' : 'missing');
+      if (!token) {
+        setCompany(null);
+        setCompanyLoading(false);
+        setIsLoading(false);
+        return;
+      }
+      const response = await companyAuthApiGet<{ company: Company }>('/api/auth/company/me');
+      if (__DEV__) console.log('[Auth] Company session valid:', response.company.name);
+      setCompany(response.company);
+      
+      // If company session is valid, check user session
+      const userToken = await getToken();
+      if (userToken) {
+        try {
+          const userResponse = await authenticatedGet<{ user: User }>('/api/auth/me');
+          setUser(userResponse.user);
+        } catch (error) {
+          await removeToken();
+          setUser(null);
+        }
+      }
+      setIsLoading(false);
+    } catch (error) {
+      if (__DEV__) console.error('[Auth] Company session check failed:', error);
+      await removeCompanyToken();
+      setCompany(null);
+      setCompanyLoading(false);
+      setIsLoading(false);
+    } finally {
+      setCompanyLoading(false);
+    }
+  }, []); // Empty dependency array - this function doesn't depend on anything
+
+  // Initial session check - only runs once on mount
   useEffect(() => {
     checkCompanySession();
-  }, [checkCompanySession]);
+  }, []); // Empty dependency array - only run once on mount
 
+  // Navigation logic - runs when auth state or route changes
   useEffect(() => {
     if (companyLoading || isLoading) return;
     
@@ -74,51 +132,6 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       router.replace('/(tabs)/(home)/');
     }
   }, [user, company, segments, isLoading, companyLoading, router]);
-
-  const checkSession = useCallback(async () => {
-    try {
-      const token = await getToken();
-      if (!token) {
-        setUser(null);
-        setIsLoading(false);
-        setCompanyLoading(false);
-        return;
-      }
-      const response = await authenticatedGet<{ user: User }>('/api/auth/me');
-      setUser(response.user);
-    } catch (error) {
-      await removeToken();
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-      setCompanyLoading(false);
-    }
-  }, []);
-
-  const checkCompanySession = useCallback(async () => {
-    try {
-      const token = await getCompanyToken();
-      if (__DEV__) console.log('[Auth] Checking company session, token:', token ? 'present' : 'missing');
-      if (!token) {
-        setCompany(null);
-        setCompanyLoading(false);
-        setIsLoading(false);
-        return;
-      }
-      const response = await companyAuthApiGet<{ company: Company }>('/api/auth/company/me');
-      if (__DEV__) console.log('[Auth] Company session valid:', response.company.name);
-      setCompany(response.company);
-      
-      // If company session is valid, check user session
-      await checkSession();
-    } catch (error) {
-      if (__DEV__) console.error('[Auth] Company session check failed:', error);
-      await removeCompanyToken();
-      setCompany(null);
-      setCompanyLoading(false);
-      setIsLoading(false);
-    }
-  }, [checkSession]);
 
   const companyLogin = async (email: string, password: string) => {
     const response = await companyApiPost<{ company: Company; token: string }>('/api/auth/company/login', { email, password });
