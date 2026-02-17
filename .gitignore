@@ -35,3 +35,5 @@ ios/
 pnpm-lock.yaml
 package-lock.json
 
+chat_history.json
+
