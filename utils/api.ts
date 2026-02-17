@@ -120,11 +120,29 @@ export const apiCall = async <T = any>(
 
   try {
     const response = await fetch(url, requestOptions);
-    const data = await response.json();
 
+    // Check if response is ok first
     if (!response.ok) {
-      console.error(`[API] Error ${response.status}:`, data);
-      throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
+      // Try to parse error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        // If JSON parsing fails, use a generic error message
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      console.error(`[API] Error ${response.status}:`, errorData);
+      throw new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
+    }
+
+    // For successful responses, parse JSON
+    let data;
+    try {
+      data = await response.json();
+    } catch (error) {
+      // If response has no body or is not JSON, return empty object
+      console.warn('[API] Response has no JSON body, returning empty object');
+      data = {};
     }
 
     console.log(`[API] Success:`, data);
