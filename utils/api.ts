@@ -12,7 +12,9 @@ const COMPANY_TOKEN_KEY = '@crewclock_company_token';
 export const saveToken = async (token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(TOKEN_KEY, token);
-    console.log('[API] Token saved successfully');
+    if (__DEV__) {
+      console.log('[API] Token saved successfully');
+    }
   } catch (error) {
     console.error('[API] Error saving token:', error);
   }
@@ -31,7 +33,9 @@ export const getToken = async (): Promise<string | null> => {
 export const removeToken = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(TOKEN_KEY);
-    console.log('[API] Token removed successfully');
+    if (__DEV__) {
+      console.log('[API] Token removed successfully');
+    }
   } catch (error) {
     console.error('[API] Error removing token:', error);
   }
@@ -41,7 +45,9 @@ export const removeToken = async (): Promise<void> => {
 export const saveCompanyToken = async (token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(COMPANY_TOKEN_KEY, token);
-    console.log('[API] Company token saved successfully');
+    if (__DEV__) {
+      console.log('[API] Company token saved successfully');
+    }
   } catch (error) {
     console.error('[API] Error saving company token:', error);
   }
@@ -50,7 +56,9 @@ export const saveCompanyToken = async (token: string): Promise<void> => {
 export const getCompanyToken = async (): Promise<string | null> => {
   try {
     const token = await AsyncStorage.getItem(COMPANY_TOKEN_KEY);
-    console.log('[API] Retrieved company token from storage:', token ? `${token.substring(0, 8)}...` : 'null');
+    if (__DEV__) {
+      console.log('[API] Retrieved company token from storage:', token ? `${token.substring(0, 8)}...` : 'null');
+    }
     return token;
   } catch (error) {
     console.error('[API] Error getting company token:', error);
@@ -61,7 +69,9 @@ export const getCompanyToken = async (): Promise<string | null> => {
 export const removeCompanyToken = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(COMPANY_TOKEN_KEY);
-    console.log('[API] Company token removed successfully');
+    if (__DEV__) {
+      console.log('[API] Company token removed successfully');
+    }
   } catch (error) {
     console.error('[API] Error removing company token:', error);
   }
@@ -83,7 +93,9 @@ export const apiCall = async <T = any>(
   const { method = 'GET', body, headers = {}, requiresAuth = false, requiresCompanyAuth = false } = options;
 
   const url = `${BACKEND_URL}${endpoint}`;
-  console.log(`[API] ${method} ${url}`);
+  if (__DEV__) {
+    console.log(`[API] ${method} ${url}`);
+  }
 
   const requestHeaders: Record<string, string> = {
     ...headers,
@@ -99,7 +111,9 @@ export const apiCall = async <T = any>(
     const token = await getToken();
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
-      console.log('[API] Added Authorization header');
+      if (__DEV__) {
+        console.log('[API] Added Authorization header');
+      }
     } else {
       console.warn('[API] Auth required but no token found');
     }
@@ -110,13 +124,17 @@ export const apiCall = async <T = any>(
     const companyToken = await getCompanyToken();
     if (companyToken) {
       requestHeaders['X-Company-Token'] = companyToken;
-      console.log('[API] Added X-Company-Token header:', `${companyToken.substring(0, 8)}...`);
+      if (__DEV__) {
+        console.log('[API] Added X-Company-Token header:', `${companyToken.substring(0, 8)}...`);
+      }
     } else {
       console.warn('[API] Company auth required but no company token found');
     }
   }
 
-  console.log('[API] Request headers:', Object.keys(requestHeaders));
+  if (__DEV__) {
+    console.log('[API] Request headers:', Object.keys(requestHeaders));
+  }
 
   const requestOptions: RequestInit = {
     method,
@@ -125,38 +143,42 @@ export const apiCall = async <T = any>(
 
   if (body && method !== 'GET') {
     requestOptions.body = JSON.stringify(body);
-    console.log('[API] Request body:', JSON.stringify(body).substring(0, 100));
+    if (__DEV__) {
+      console.log('[API] Request body:', JSON.stringify(body).substring(0, 100));
+    }
   }
 
   try {
-    console.log('[API] Sending fetch request...');
+    if (__DEV__) {
+      console.log('[API] Sending fetch request...');
+    }
     const response = await fetch(url, requestOptions);
-    console.log('[API] Fetch response received:', response.status, response.statusText);
+    if (__DEV__) {
+      console.log('[API] Fetch response received:', response.status, response.statusText);
+    }
     
     // Check if response is ok before trying to parse JSON
     if (!response.ok) {
       console.error(`[API] HTTP Error ${response.status} ${response.statusText}`);
       
-      // Try to parse error response as JSON
+      // Try to parse error response - read text first, then try JSON
       let errorMessage = `Request failed with status ${response.status}`;
+      const text = await response.text();
       try {
-        const errorData = await response.json();
+        const errorData = JSON.parse(text);
         errorMessage = errorData.error || errorData.message || errorMessage;
         console.error(`[API] Error details:`, errorData);
-      } catch (jsonError) {
-        // If JSON parsing fails, try to get text response
-        try {
-          const textResponse = await response.text();
-          console.error(`[API] Non-JSON error response:`, textResponse.substring(0, 200));
-          
-          // Provide helpful error message based on status code
-          if (response.status === 404) {
-            errorMessage = 'API endpoint not found. The backend may still be building or the route is not registered.';
-          } else if (response.status === 500) {
-            errorMessage = 'Internal server error. Please check the backend logs.';
-          }
-        } catch (textError) {
-          console.error(`[API] Could not read error response`);
+      } catch {
+        // text is not JSON, use status-based messaging
+        if (__DEV__) {
+          console.error(`[API] Non-JSON error response:`, text.substring(0, 200));
+        }
+        
+        // Provide helpful error message based on status code
+        if (response.status === 404) {
+          errorMessage = 'API endpoint not found. The backend may still be building or the route is not registered.';
+        } else if (response.status === 500) {
+          errorMessage = 'Internal server error. Please check the backend logs.';
         }
       }
       
@@ -165,7 +187,9 @@ export const apiCall = async <T = any>(
 
     // Parse successful response as JSON
     const data = await response.json();
-    console.log(`[API] Success:`, data);
+    if (__DEV__) {
+      console.log(`[API] Success:`, data);
+    }
     return data;
   } catch (error: any) {
     // If it's already an Error with a message, rethrow it
@@ -173,12 +197,6 @@ export const apiCall = async <T = any>(
       console.error('[API] Request failed:', error.message);
       console.error('[API] Error stack:', error.stack);
       throw error;
-    }
-    
-    // Handle JSON parsing errors specifically
-    if (error.message && error.message.includes('JSON')) {
-      console.error('[API] JSON parsing error - response may not be valid JSON');
-      throw new Error('Invalid response from server. The backend may still be building.');
     }
     
     console.error('[API] Request failed:', error);
