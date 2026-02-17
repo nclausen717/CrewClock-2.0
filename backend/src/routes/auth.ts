@@ -3,6 +3,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { user, account, session } from '../db/auth-schema.js';
 import { employees } from '../db/schema.js';
+import { requireCompanyAuth } from '../utils/company-auth.js';
 
 export function registerAuthRoutes(app: App) {
   const requireAuth = app.requireAuth();
@@ -50,6 +51,10 @@ export function registerAuthRoutes(app: App) {
 
       app.logger.info({ email }, 'Crew lead login attempt');
 
+      // Require company authentication
+      const companyAuth = await requireCompanyAuth(app, request, reply);
+      if (!companyAuth) return; // Error response already sent
+
       try {
         // Find user by email
         const users = await app.db.select().from(user).where(eq(user.email, email));
@@ -60,6 +65,18 @@ export function registerAuthRoutes(app: App) {
         }
 
         const foundUser = users[0];
+
+        // Verify user belongs to the authenticated company
+        if (foundUser.companyId !== companyAuth.company.id) {
+          const logContext = {
+            email,
+            userId: foundUser.id,
+            userCompanyId: foundUser.companyId,
+            authCompanyId: companyAuth.company.id
+          };
+          app.logger.warn(logContext, 'Crew lead login failed: user does not belong to authenticated company');
+          return reply.status(401).send({ error: 'Invalid credentials' });
+        }
 
         // Verify role is crew_lead
         if (foundUser.role !== 'crew_lead') {
@@ -166,6 +183,10 @@ export function registerAuthRoutes(app: App) {
 
       app.logger.info({ email }, 'Admin login attempt');
 
+      // Require company authentication
+      const companyAuth = await requireCompanyAuth(app, request, reply);
+      if (!companyAuth) return; // Error response already sent
+
       try {
         // Find user by email
         const users = await app.db.select().from(user).where(eq(user.email, email));
@@ -176,6 +197,18 @@ export function registerAuthRoutes(app: App) {
         }
 
         const foundUser = users[0];
+
+        // Verify user belongs to the authenticated company
+        if (foundUser.companyId !== companyAuth.company.id) {
+          const logContext = {
+            email,
+            userId: foundUser.id,
+            userCompanyId: foundUser.companyId,
+            authCompanyId: companyAuth.company.id
+          };
+          app.logger.warn(logContext, 'Admin login failed: user does not belong to authenticated company');
+          return reply.status(401).send({ error: 'Invalid credentials' });
+        }
 
         // Verify role is admin
         if (foundUser.role !== 'admin') {
@@ -288,6 +321,10 @@ export function registerAuthRoutes(app: App) {
 
       app.logger.info({ email, name, companyId }, 'Crew lead registration attempt');
 
+      // Require company authentication
+      const companyAuth = await requireCompanyAuth(app, request, reply);
+      if (!companyAuth) return; // Error response already sent
+
       try {
         // Check if user already exists
         const existingUsers = await app.db.select().from(user).where(eq(user.email, email));
@@ -314,14 +351,17 @@ export function registerAuthRoutes(app: App) {
 
         // Generate IDs
         const userId = crypto.randomUUID();
-
         // Create user with company association
+=======
+        // Create user with company_id
         await app.db.insert(user).values({
           id: userId,
           email,
           name,
           role: 'crew_lead',
           companyId,
+=======
+          companyId: companyAuth.company.id,
         });
 
         // Create account with password
@@ -416,6 +456,10 @@ export function registerAuthRoutes(app: App) {
 
       app.logger.info({ email, name, companyId }, 'Admin registration attempt');
 
+      // Require company authentication
+      const companyAuth = await requireCompanyAuth(app, request, reply);
+      if (!companyAuth) return; // Error response already sent
+
       try {
         // Check if user already exists
         const existingUsers = await app.db.select().from(user).where(eq(user.email, email));
@@ -431,14 +475,17 @@ export function registerAuthRoutes(app: App) {
 
         // Generate IDs
         const userId = crypto.randomUUID();
-
         // Create user with company association
+=======
+        // Create user with company_id
         await app.db.insert(user).values({
           id: userId,
           email,
           name,
           role: 'admin',
           companyId,
+=======
+          companyId: companyAuth.company.id,
         });
 
         // Create account with password

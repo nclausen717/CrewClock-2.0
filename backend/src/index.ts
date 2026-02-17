@@ -2,6 +2,7 @@ import { createApplication } from "@specific-dev/framework";
 import * as appSchema from './db/schema.js';
 import * as authSchema from './db/auth-schema.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerCompanyAuthRoutes } from './routes/company-auth.js';
 import { registerEmployeeRoutes } from './routes/employees.js';
 import { registerJobSitesRoutes } from './routes/job-sites.js';
 import { registerTimeEntriesRoutes } from './routes/time-entries.js';
@@ -21,6 +22,7 @@ export type App = typeof app;
 app.withAuth();
 
 // Register route modules
+registerCompanyAuthRoutes(app);
 registerAuthRoutes(app);
 registerEmployeeRoutes(app);
 registerJobSitesRoutes(app);

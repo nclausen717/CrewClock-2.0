@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
+import { company } from "./schema.js";
 
 // Companies table - top-level tenant isolation
 export const company = pgTable("company", {
@@ -19,6 +20,9 @@ export const user = pgTable("user", {
   image: text("image"),
   role: text("role").notNull().default("crew_lead"), // 'crew_lead' or 'admin'
   companyId: text("company_id")
+=======
+  companyId: uuid("company_id")
+ main
     .notNull()
     .references(() => company.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

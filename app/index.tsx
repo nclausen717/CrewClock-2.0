@@ -17,11 +17,11 @@ function resolveImageSource(source: string | number | ImageSourcePropType | unde
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { isLoading, isAuthenticated, user } = useAuth();
+  const { isLoading, companyLoading, isAuthenticated, isCompanyAuthenticated, user, company } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    console.log('[Welcome] Screen mounted/updated:', { isLoading, isAuthenticated, hasUser: !!user });
+    console.log('[Welcome] Screen mounted/updated:', { isLoading, companyLoading, isAuthenticated, isCompanyAuthenticated, hasUser: !!user, hasCompany: !!company });
     
     // Force screen to be visible after a short delay to prevent black screen
     const timer = setTimeout(() => {
@@ -29,19 +29,27 @@ export default function WelcomeScreen() {
     }, 50);
     
     return () => clearTimeout(timer);
-  }, [isLoading, isAuthenticated, user]);
+  }, [isLoading, companyLoading, isAuthenticated, isCompanyAuthenticated, user, company]);
 
   const crewText = 'Crew';
   const clockText = 'Clock';
 
-  console.log('[Welcome] Rendering - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'isVisible:', isVisible);
+  console.log('[Welcome] Rendering - isLoading:', isLoading, 'companyLoading:', companyLoading, 'isAuthenticated:', isAuthenticated, 'isCompanyAuthenticated:', isCompanyAuthenticated, 'isVisible:', isVisible);
 
   // Always render the container with background to prevent black screen
   // Show loading spinner during initial load or when authenticated (redirecting)
-  const showLoading = isLoading || (isAuthenticated && user);
+  const showLoading = isLoading || companyLoading || (isAuthenticated && user) || !isCompanyAuthenticated;
   
   if (showLoading) {
-    const loadingText = isLoading ? 'Loading...' : 'Redirecting...';
+    let loadingText = 'Loading...';
+    if (!isCompanyAuthenticated && !companyLoading) {
+      loadingText = 'Redirecting to company login...';
+    } else if (isCompanyAuthenticated && !isLoading && !isAuthenticated) {
+      loadingText = 'Company authenticated...';
+    } else if (isAuthenticated && user) {
+      loadingText = 'Redirecting...';
+    }
+    
     console.log('[Welcome] Showing loading state:', loadingText);
     
     return (
@@ -56,8 +64,8 @@ export default function WelcomeScreen() {
     );
   }
 
-  // Show login options when not loading and not authenticated
-  console.log('[Welcome] Showing login options');
+  // Show role selection only when company is authenticated but user is not
+  console.log('[Welcome] Showing role selection for company:', company?.name);
   
   return (
     <View style={[styles.container, { opacity: isVisible ? 1 : 0 }]}>
@@ -73,7 +81,10 @@ export default function WelcomeScreen() {
               <Text style={styles.crewText}>{crewText}</Text>
               <Text style={styles.clockText}>{clockText}</Text>
             </View>
-            <Text style={styles.subtitle}>Time Tracking Made Simple</Text>
+            {company && (
+              <Text style={styles.companyName}>{company.name}</Text>
+            )}
+            <Text style={styles.subtitle}>Select Your Role</Text>
           </View>
 
           <View style={styles.buttonContainer}>
@@ -171,6 +182,12 @@ const styles = StyleSheet.create({
     fontSize: 42,
     fontWeight: 'bold',
     color: '#4CAF50',
+  },
+  companyName: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginTop: 12,
   },
   subtitle: {
     fontSize: 18,
