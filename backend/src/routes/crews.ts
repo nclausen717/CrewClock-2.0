@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, isNull, count, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, isNull, count, gte, lte, sql, inArray } from 'drizzle-orm';
 import { crews, employees, timeEntries, jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
@@ -859,7 +859,7 @@ export function registerCrewRoutes(app: App) {
           .from(employees)
           .where(
             and(
-              sql`${employees.id} IN (${sql.join(crewLeaderIds.map(id => sql`${id}`), sql`, `)})`,
+              inArray(employees.id, crewLeaderIds),
               eq(employees.companyId, session.user.companyId)
             )
           ) : [];
