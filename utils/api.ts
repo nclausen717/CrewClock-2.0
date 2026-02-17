@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
 
 const TOKEN_KEY = '@crewclock_auth_token';
+const COMPANY_TOKEN_KEY = '@crewclock_company_token';
 
 // Token management
 export const saveToken = async (token: string): Promise<void> => {
@@ -36,19 +37,49 @@ export const removeToken = async (): Promise<void> => {
   }
 };
 
+// Company token management
+export const saveCompanyToken = async (token: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(COMPANY_TOKEN_KEY, token);
+    console.log('[API] Company token saved successfully');
+  } catch (error) {
+    console.error('[API] Error saving company token:', error);
+  }
+};
+
+export const getCompanyToken = async (): Promise<string | null> => {
+  try {
+    const token = await AsyncStorage.getItem(COMPANY_TOKEN_KEY);
+    return token;
+  } catch (error) {
+    console.error('[API] Error getting company token:', error);
+    return null;
+  }
+};
+
+export const removeCompanyToken = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(COMPANY_TOKEN_KEY);
+    console.log('[API] Company token removed successfully');
+  } catch (error) {
+    console.error('[API] Error removing company token:', error);
+  }
+};
+
 // Generic API call wrapper
 interface ApiCallOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: any;
   headers?: Record<string, string>;
   requiresAuth?: boolean;
+  requiresCompanyAuth?: boolean;
 }
 
 export const apiCall = async <T = any>(
   endpoint: string,
   options: ApiCallOptions = {}
 ): Promise<T> => {
-  const { method = 'GET', body, headers = {}, requiresAuth = false } = options;
+  const { method = 'GET', body, headers = {}, requiresAuth = false, requiresCompanyAuth = false } = options;
 
   const url = `${BACKEND_URL}${endpoint}`;
   console.log(`[API] ${method} ${url}`);
@@ -67,6 +98,14 @@ export const apiCall = async <T = any>(
     const token = await getToken();
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  // Add company token if required
+  if (requiresCompanyAuth) {
+    const companyToken = await getCompanyToken();
+    if (companyToken) {
+      requestHeaders['X-Company-Token'] = companyToken;
     }
   }
 
@@ -127,3 +166,21 @@ export const authenticatedPatch = <T = any>(endpoint: string, body: any): Promis
 
 export const authenticatedDelete = <T = any>(endpoint: string): Promise<T> =>
   apiDelete<T>(endpoint, true);
+
+// Company API methods (without auth, for login/register)
+export const companyApiPost = <T = any>(endpoint: string, body: any): Promise<T> =>
+  apiCall<T>(endpoint, { method: 'POST', body });
+
+// Company authenticated API methods (with company token)
+export const companyAuthApiGet = <T = any>(endpoint: string): Promise<T> =>
+  apiCall<T>(endpoint, { method: 'GET', requiresCompanyAuth: true });
+
+export const companyAuthApiPost = <T = any>(endpoint: string, body: any): Promise<T> =>
+  apiCall<T>(endpoint, { method: 'POST', body, requiresCompanyAuth: true });
+
+// Company authenticated API methods (with both company and user tokens)
+export const companyAuthenticatedPost = <T = any>(endpoint: string, body: any): Promise<T> =>
+  apiCall<T>(endpoint, { method: 'POST', body, requiresAuth: true, requiresCompanyAuth: true });
+
+export const companyAuthenticatedGet = <T = any>(endpoint: string): Promise<T> =>
+  apiCall<T>(endpoint, { method: 'GET', requiresAuth: true, requiresCompanyAuth: true });

@@ -12,9 +12,10 @@ import { Modal } from '@/components/ui/Modal';
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { user, logout, isLoading } = useAuth();
+  const { user, company, logout, companyLogout, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [companyModalVisible, setCompanyModalVisible] = useState(false);
 
   // Show loading state while auth is initializing
   if (isLoading) {
@@ -51,6 +52,25 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleCompanyLogout = async () => {
+    setCompanyModalVisible(true);
+  };
+
+  const confirmCompanyLogout = async () => {
+    console.log('User confirmed company logout');
+    setCompanyModalVisible(false);
+    setLoading(true);
+    
+    try {
+      await companyLogout();
+      console.log('Company logout complete');
+    } catch (error) {
+      console.error('Company logout error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getRoleColor = () => {
     return user?.role === 'admin' ? colors.adminPrimary : colors.crewLeadPrimary;
   };
@@ -81,6 +101,13 @@ export default function ProfileScreen() {
           <View style={[styles.roleBadge, { backgroundColor: `${getRoleColor()}20` }]}>
             <Text style={[styles.roleText, { color: getRoleColor() }]}>{roleDisplay}</Text>
           </View>
+          {company && (
+            <View style={styles.companyInfo}>
+              <Text style={styles.companyLabel}>Company</Text>
+              <Text style={styles.companyName}>{company.name}</Text>
+              {company.city && <Text style={styles.companyDetail}>{company.city}</Text>}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -175,7 +202,28 @@ export default function ProfileScreen() {
                 color={colors.error}
                 style={styles.logoutIcon}
               />
-              <Text style={styles.logoutText}>Logout</Text>
+              <Text style={styles.logoutText}>Logout from Role</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.logoutButton, styles.companyLogoutButton]} 
+          onPress={handleCompanyLogout}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.error} />
+          ) : (
+            <>
+              <IconSymbol
+                ios_icon_name="building.2.fill"
+                android_material_icon_name="business"
+                size={24}
+                color={colors.error}
+                style={styles.logoutIcon}
+              />
+              <Text style={styles.logoutText}>Logout from Company</Text>
             </>
           )}
         </TouchableOpacity>
@@ -184,10 +232,21 @@ export default function ProfileScreen() {
       <Modal
         visible={modalVisible}
         title="Confirm Logout"
-        message="Are you sure you want to logout?"
+        message="Are you sure you want to logout from your role? You will return to the role selection screen."
         type="warning"
         onClose={() => setModalVisible(false)}
         onConfirm={confirmLogout}
+        confirmText="Logout"
+        cancelText="Cancel"
+      />
+
+      <Modal
+        visible={companyModalVisible}
+        title="Confirm Company Logout"
+        message="Are you sure you want to logout from your company? This will log you out completely and you will need to login again."
+        type="warning"
+        onClose={() => setCompanyModalVisible(false)}
+        onConfirm={confirmCompanyLogout}
         confirmText="Logout"
         cancelText="Cancel"
       />
@@ -237,6 +296,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  companyInfo: {
+    marginTop: 16,
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  companyLabel: {
+    fontSize: 12,
+    color: '#b0c4de',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  companyName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
+  },
+  companyDetail: {
+    fontSize: 14,
+    color: '#b0c4de',
+  },
   section: {
     marginBottom: 24,
   },
@@ -280,6 +363,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: colors.error,
+  },
+  companyLogoutButton: {
+    marginTop: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
   },
   logoutIcon: {
     marginRight: 12,
