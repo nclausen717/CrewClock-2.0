@@ -127,8 +127,9 @@ export const apiCall = async <T = any>(
       let errorData;
       try {
         errorData = await response.json();
-      } catch {
+      } catch (jsonError) {
         // If JSON parsing fails, use a generic error message
+        console.warn('[API] Failed to parse error response:', jsonError);
         throw new Error(`Request failed with status ${response.status}`);
       }
       console.error(`[API] Error ${response.status}:`, errorData);
@@ -140,8 +141,8 @@ export const apiCall = async <T = any>(
     try {
       data = await response.json();
     } catch (error) {
-      // If response has no body or is not JSON, return empty object
-      console.warn('[API] Response has no JSON body, returning empty object');
+      // If response body is empty or contains invalid JSON, return empty object
+      console.warn('[API] Response body is empty or contains invalid JSON, returning empty object:', error);
       data = {};
     }
 
