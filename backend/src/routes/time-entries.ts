@@ -281,7 +281,7 @@ export function registerTimeEntriesRoutes(app: App) {
               },
               skipped: {
                 type: 'array',
-                items: { type: 'string' },
+                items: { type: 'string', format: 'uuid' },
               },
             },
           },

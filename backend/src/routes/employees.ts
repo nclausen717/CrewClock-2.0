@@ -6,8 +6,9 @@ import { user as userTable, account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
- * Generate a secure random password using Node.js crypto
+ * Generate a cryptographically secure random password using Node.js crypto
  * 8-12 characters with mix of letters and numbers
+ * Uses crypto.randomInt() and crypto.randomBytes() for secure randomness
  */
 function generatePassword(): string {
   const length = crypto.randomInt(8, 13); // 8-12 characters (13 is exclusive upper bound)
