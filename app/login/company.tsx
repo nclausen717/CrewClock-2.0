@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  ImageSourcePropType,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,13 @@ import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/ui/Modal';
+
+// Helper to resolve image sources (handles both local require() and remote URLs)
+function resolveImageSource(source: string | number | ImageSourcePropType | undefined): ImageSourcePropType {
+  if (!source) return { uri: '' };
+  if (typeof source === 'string') return { uri: source };
+  return source as ImageSourcePropType;
+}
 
 export default function CompanyLoginScreen() {
   const router = useRouter();
