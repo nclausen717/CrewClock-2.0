@@ -172,7 +172,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   const login = async (email: string, password: string, role: 'crew_lead' | 'admin') => {
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/login' : '/api/auth/admin/login';
-    const response = await companyAuthenticatedPost<{ user: User; token: string }>(endpoint, { email, password });
+    const response = await companyAuthApiPost<{ user: User; token: string }>(endpoint, { email, password });
     await saveToken(response.token);
     setUser(response.user);
   };
