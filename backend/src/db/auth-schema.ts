@@ -1,17 +1,6 @@
 import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
 import { company } from "./schema.js";
 
-// Companies table - top-level tenant isolation
-export const company = pgTable("company", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
-
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -19,12 +8,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   role: text("role").notNull().default("crew_lead"), // 'crew_lead' or 'admin'
-  companyId: text("company_id")
-=======
-  companyId: uuid("company_id")
- main
-    .notNull()
-    .references(() => company.id, { onDelete: "cascade" }),
+  companyId: uuid("company_id").references(() => company.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

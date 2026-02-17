@@ -5,11 +5,11 @@ import { company, companySession } from '../db/schema.js';
 
 export function registerCompanyAuthRoutes(app: App) {
   /**
-   * POST /api/auth/company/register
+   * POST /api/companies/register
    * Company registration endpoint
    */
   app.fastify.post(
-    '/api/auth/company/register',
+    '/api/companies/register',
     {
       schema: {
         description: 'Company registration',

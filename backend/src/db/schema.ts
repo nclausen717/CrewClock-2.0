@@ -1,5 +1,4 @@
 import { pgTable, text, timestamp, boolean, uuid, unique } from 'drizzle-orm/pg-core';
-import { company } from './auth-schema.js';
 
 // Company table - top-level organization entity
 export const company = pgTable('company', {
@@ -36,11 +35,7 @@ export const crews = pgTable('crews', {
   name: text('name').notNull(),
   crewLeaderId: uuid('crew_leader_id'), // nullable - crew leader assigned to this crew
   createdBy: text('created_by').notNull(), // admin user id who created the crew
-  companyId: text('company_id')
-=======
-  companyId: uuid('company_id')
-    .notNull()
-    .references(() => company.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
@@ -59,9 +54,7 @@ export const employees = pgTable('employees', {
   isCrewLeader: boolean('is_crew_leader').default(false).notNull(),
   crewId: uuid('crew_id').references(() => crews.id, { onDelete: 'set null' }), // which crew this employee belongs to
   createdBy: text('created_by'), // admin user id who created this employee, null if self-registered crew leader
-  companyId: text('company_id')
-    .notNull()
-    .references(() => company.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
@@ -75,13 +68,8 @@ export const jobSites = pgTable('job_sites', {
   name: text('name').notNull(),
   location: text('location').notNull(),
   createdBy: text('created_by').notNull(), // admin user id
-  companyId: text('company_id')
-    .notNull()
-    .references(() => company.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').references(() => company.id, { onDelete: 'cascade' }),
   isActive: boolean('is_active').default(true).notNull(),
-  companyId: uuid('company_id')
-    .notNull()
-    .references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
@@ -101,12 +89,7 @@ export const timeEntries = pgTable('time_entries', {
   clockInTime: timestamp('clock_in_time', { withTimezone: true }).notNull(),
   clockOutTime: timestamp('clock_out_time', { withTimezone: true }),
   clockedInBy: text('clocked_in_by').notNull(), // crew leader user id who clocked them in
-  companyId: text('company_id')
-    .notNull()
-    .references(() => company.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').references(() => company.id, { onDelete: 'cascade' }),
   workDescription: text('work_description'), // optional description of work done
-  companyId: uuid('company_id')
-    .notNull()
-    .references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

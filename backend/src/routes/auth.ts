@@ -352,15 +352,11 @@ export function registerAuthRoutes(app: App) {
         // Generate IDs
         const userId = crypto.randomUUID();
         // Create user with company association
-=======
-        // Create user with company_id
         await app.db.insert(user).values({
           id: userId,
           email,
           name,
           role: 'crew_lead',
-          companyId,
-=======
           companyId: companyAuth.company.id,
         });
 
@@ -476,15 +472,11 @@ export function registerAuthRoutes(app: App) {
         // Generate IDs
         const userId = crypto.randomUUID();
         // Create user with company association
-=======
-        // Create user with company_id
         await app.db.insert(user).values({
           id: userId,
           email,
           name,
           role: 'admin',
-          companyId,
-=======
           companyId: companyAuth.company.id,
         });
 
