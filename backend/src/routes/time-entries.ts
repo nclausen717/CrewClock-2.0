@@ -195,8 +195,8 @@ export function registerTimeEntriesRoutes(app: App) {
 
         // Check if all requested employees were found
         if (validEmployees.length !== employeeIds.length) {
-          const foundIds = validEmployees.map(e => e.id);
-          const missingIds = employeeIds.filter(id => !foundIds.includes(id));
+          const foundIds = new Set(validEmployees.map(e => e.id));
+          const missingIds = employeeIds.filter(id => !foundIds.has(id));
           app.logger.warn({ missingIds }, 'Some employees not found or access denied');
           return reply.status(400).send({ error: `Employees not found: ${missingIds.join(', ')}` });
         }

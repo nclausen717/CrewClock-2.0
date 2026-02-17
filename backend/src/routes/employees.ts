@@ -10,7 +10,7 @@ import { requireAuthWithRole } from '../utils/auth.js';
  * 8-12 characters with mix of letters and numbers
  */
 function generatePassword(): string {
-  const length = 8 + Math.floor(crypto.randomBytes(1)[0] % 5); // 8-12 characters
+  const length = crypto.randomInt(8, 13); // 8-12 characters (13 is exclusive upper bound)
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let password = '';
   const randomBytes = crypto.randomBytes(length);
