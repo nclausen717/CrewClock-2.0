@@ -14,7 +14,7 @@ import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from '@/utils/api';
+import { authenticatedGet, authenticatedPost, authenticatedDelete } from '@/utils/api';
 import { Modal } from '@/components/ui/Modal';
 
 interface Crew {
