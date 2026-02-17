@@ -5,8 +5,6 @@ import { timeEntries, employees, jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 export function registerTimeEntriesRoutes(app: App) {
-  const requireAuth = app.requireAuth();
-
   /**
    * GET /api/employees/for-clock-in
    * Returns all regular employees plus the authenticated crew leader themselves

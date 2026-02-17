@@ -98,6 +98,8 @@ export default function RootLayout() {
                 {/* Other screens */}
                 <Stack.Screen name="clock-in" options={{ headerShown: false }} />
                 <Stack.Screen name="clock-out" options={{ headerShown: false }} />
+                <Stack.Screen name="crews" options={{ headerShown: false }} />
+                <Stack.Screen name="crew-dashboard" options={{ headerShown: false }} />
                 <Stack.Screen name="employees" options={{ headerShown: false }} />
                 <Stack.Screen name="job-sites" options={{ headerShown: false }} />
                 <Stack.Screen name="reports" options={{ headerShown: false }} />

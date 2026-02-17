@@ -5,8 +5,6 @@ import { crews, employees, timeEntries, jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 export function registerCrewRoutes(app: App) {
-  const requireAuth = app.requireAuth();
-
   /**
    * GET /api/crews
    * Returns all crews with crew leader info

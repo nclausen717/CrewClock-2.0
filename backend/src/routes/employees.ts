@@ -20,8 +20,6 @@ function generatePassword(): string {
 }
 
 export function registerEmployeeRoutes(app: App) {
-  const requireAuth = app.requireAuth();
-
   /**
    * GET /api/employees
    * Returns all employees for authenticated admin or crew lead

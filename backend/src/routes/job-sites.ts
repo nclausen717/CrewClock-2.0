@@ -5,8 +5,6 @@ import { jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 export function registerJobSitesRoutes(app: App) {
-  const requireAuth = app.requireAuth();
-
   /**
    * GET /api/job-sites
    * Returns all active job sites for authenticated admin or crew lead
