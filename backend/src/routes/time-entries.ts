@@ -46,23 +46,33 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(403).send({ error: 'Only crew leaders can clock in employees' });
         }
 
-        // Get all non-crew-leader employees
+        // Get all non-crew-leader employees from the same company
         const regularEmployees = await app.db
           .select({
             id: employees.id,
             name: employees.name,
           })
           .from(employees)
-          .where(eq(employees.isCrewLeader, false));
+          .where(
+            and(
+              eq(employees.isCrewLeader, false),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
-        // Get the authenticated crew leader if they exist as an employee
+        // Get the authenticated crew leader if they exist as an employee in the same company
         const crewLeader = await app.db
           .select({
             id: employees.id,
             name: employees.name,
           })
           .from(employees)
-          .where(eq(employees.id, session.user.id));
+          .where(
+            and(
+              eq(employees.id, session.user.id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         // Combine both lists (crew leader will only be included if they are an employee)
         const employeeList = [...regularEmployees];
@@ -139,11 +149,16 @@ export function registerTimeEntriesRoutes(app: App) {
       );
 
       try {
-        // Validate that user is a crew leader
+        // Validate that user is a crew leader from the same company
         const userEmployee = await app.db
           .select()
           .from(employees)
-          .where(eq(employees.id, session.user.id));
+          .where(
+            and(
+              eq(employees.id, session.user.id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         const isCrewLeader = userEmployee.length > 0 && userEmployee[0].isCrewLeader;
 
@@ -153,11 +168,19 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        // Validate job site exists
-        const sites = await app.db.select().from(jobSites).where(eq(jobSites.id, jobSiteId));
+        // Validate job site exists and belongs to the same company
+        const sites = await app.db
+          .select()
+          .from(jobSites)
+          .where(
+            and(
+              eq(jobSites.id, jobSiteId),
+              eq(jobSites.companyId, session.user.companyId)
+            )
+          );
 
         if (sites.length === 0) {
-          app.logger.warn({ jobSiteId }, 'Job site not found');
+          app.logger.warn({ jobSiteId }, 'Job site not found or access denied');
           return reply.status(400).send({ error: 'Job site not found' });
         }
 
@@ -166,11 +189,19 @@ export function registerTimeEntriesRoutes(app: App) {
         const now = new Date();
 
         for (const employeeId of employeeIds) {
-          // Validate employee exists
-          const emps = await app.db.select().from(employees).where(eq(employees.id, employeeId));
+          // Validate employee exists and belongs to the same company
+          const emps = await app.db
+            .select()
+            .from(employees)
+            .where(
+              and(
+                eq(employees.id, employeeId),
+                eq(employees.companyId, session.user.companyId)
+              )
+            );
 
           if (emps.length === 0) {
-            app.logger.warn({ employeeId }, 'Employee not found');
+            app.logger.warn({ employeeId }, 'Employee not found or access denied');
             return reply.status(400).send({ error: `Employee ${employeeId} not found` });
           }
 
@@ -181,6 +212,7 @@ export function registerTimeEntriesRoutes(app: App) {
               jobSiteId,
               clockInTime: now,
               clockedInBy: session.user.id,
+              companyId: session.user.companyId,
               workDescription: workDescription || null,
             })
             .returning();
@@ -264,11 +296,16 @@ export function registerTimeEntriesRoutes(app: App) {
       app.logger.info({ userId: session.user.id, employeeCount: employeeIds.length }, 'Clocking out employees');
 
       try {
-        // Validate that user is a crew leader
+        // Validate that user is a crew leader from the same company
         const userEmployee = await app.db
           .select()
           .from(employees)
-          .where(eq(employees.id, session.user.id));
+          .where(
+            and(
+              eq(employees.id, session.user.id),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
 
         const isCrewLeader = userEmployee.length > 0 && userEmployee[0].isCrewLeader;
 
@@ -282,7 +319,7 @@ export function registerTimeEntriesRoutes(app: App) {
         const now = new Date();
 
         for (const employeeId of employeeIds) {
-          // Find active time entry for this employee clocked in by current user
+          // Find active time entry for this employee clocked in by current user in the same company
           const activeEntries = await app.db
             .select()
             .from(timeEntries)
@@ -290,7 +327,8 @@ export function registerTimeEntriesRoutes(app: App) {
               and(
                 eq(timeEntries.employeeId, employeeId),
                 isNull(timeEntries.clockOutTime),
-                eq(timeEntries.clockedInBy, session.user.id)
+                eq(timeEntries.clockedInBy, session.user.id),
+                eq(timeEntries.companyId, session.user.companyId)
               )
             );
 
@@ -364,7 +402,7 @@ export function registerTimeEntriesRoutes(app: App) {
       app.logger.info({ userId: session.user.id }, 'Fetching active time entries');
 
       try {
-        // Get all active entries clocked in by this user
+        // Get all active entries clocked in by this user in the same company
         const activeEntries = await app.db
           .select({
             id: timeEntries.id,
@@ -380,7 +418,8 @@ export function registerTimeEntriesRoutes(app: App) {
           .where(
             and(
               eq(timeEntries.clockedInBy, session.user.id),
-              isNull(timeEntries.clockOutTime)
+              isNull(timeEntries.clockOutTime),
+              eq(timeEntries.companyId, session.user.companyId)
             )
           );
 
@@ -454,15 +493,23 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(403).send({ error: 'Only crew leaders can clock in' });
         }
 
-        // Validate job site exists
-        const sites = await app.db.select().from(jobSites).where(eq(jobSites.id, jobSiteId));
+        // Validate job site exists and belongs to the same company
+        const sites = await app.db
+          .select()
+          .from(jobSites)
+          .where(
+            and(
+              eq(jobSites.id, jobSiteId),
+              eq(jobSites.companyId, session.user.companyId)
+            )
+          );
 
         if (sites.length === 0) {
-          app.logger.warn({ jobSiteId }, 'Job site not found');
+          app.logger.warn({ jobSiteId }, 'Job site not found or access denied');
           return reply.status(400).send({ error: 'Job site not found' });
         }
 
-        // Create clock-in entry
+        // Create clock-in entry with companyId
         const now = new Date();
 
         const [entry] = await app.db
@@ -472,6 +519,7 @@ export function registerTimeEntriesRoutes(app: App) {
             jobSiteId,
             clockInTime: now,
             clockedInBy: session.user.id,
+            companyId: session.user.companyId,
             workDescription: workDescription || null,
           })
           .returning();
@@ -543,14 +591,15 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(403).send({ error: 'Only crew leaders can clock out' });
         }
 
-        // Find active time entry for this crew leader
+        // Find active time entry for this crew leader in the same company
         const activeEntries = await app.db
           .select()
           .from(timeEntries)
           .where(
             and(
               eq(timeEntries.employeeId, session.user.id),
-              isNull(timeEntries.clockOutTime)
+              isNull(timeEntries.clockOutTime),
+              eq(timeEntries.companyId, session.user.companyId)
             )
           );
 
