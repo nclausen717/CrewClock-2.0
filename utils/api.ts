@@ -127,9 +127,9 @@ export const apiCall = async <T = any>(
       let errorData;
       try {
         errorData = await response.json();
-      } catch (errorParseFailure) {
+      } catch (parseError) {
         // If JSON parsing fails, use a generic error message
-        console.warn('[API] Failed to parse error response:', errorParseFailure);
+        console.warn('[API] Failed to parse error response:', parseError);
         throw new Error(`Request failed with status ${response.status}`);
       }
       console.error(`[API] Error ${response.status}:`, errorData);
