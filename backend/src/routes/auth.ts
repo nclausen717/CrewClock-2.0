@@ -113,6 +113,7 @@ export function registerAuthRoutes(app: App) {
             email: foundUser.email,
             name: foundUser.name,
             role: foundUser.role,
+            companyId: foundUser.companyId,
           },
         };
       } catch (error) {
@@ -228,6 +229,7 @@ export function registerAuthRoutes(app: App) {
             email: foundUser.email,
             name: foundUser.name,
             role: foundUser.role,
+            companyId: foundUser.companyId,
           },
         };
       } catch (error) {
@@ -277,9 +279,14 @@ export function registerAuthRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { email, password, name } = request.body as { email: string; password: string; name: string };
+      const { email, password, name, companyId } = request.body as {
+        email: string;
+        password: string;
+        name: string;
+        companyId: string;
+      };
 
-      app.logger.info({ email, name }, 'Crew lead registration attempt');
+      app.logger.info({ email, name, companyId }, 'Crew lead registration attempt');
 
       try {
         // Check if user already exists
@@ -308,12 +315,13 @@ export function registerAuthRoutes(app: App) {
         // Generate IDs
         const userId = crypto.randomUUID();
 
-        // Create user
+        // Create user with company association
         await app.db.insert(user).values({
           id: userId,
           email,
           name,
           role: 'crew_lead',
+          companyId,
         });
 
         // Create account with password
@@ -325,15 +333,15 @@ export function registerAuthRoutes(app: App) {
           password: hashedPassword,
         });
 
-        // Create employee record for self-registered crew leader
+        // Create employee record for self-registered crew leader with company association
         // Set createdBy to null to indicate self-registration
-        // This makes them visible to all admins
         await app.db.insert(employees).values({
           id: userId,
           name,
           email,
           isCrewLeader: true,
           createdBy: null,
+          companyId,
         });
 
         app.logger.info({ userId, email }, 'Crew lead registered successfully');
@@ -398,9 +406,14 @@ export function registerAuthRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { email, password, name } = request.body as { email: string; password: string; name: string };
+      const { email, password, name, companyId } = request.body as {
+        email: string;
+        password: string;
+        name: string;
+        companyId: string;
+      };
 
-      app.logger.info({ email, name }, 'Admin registration attempt');
+      app.logger.info({ email, name, companyId }, 'Admin registration attempt');
 
       try {
         // Check if user already exists
@@ -418,12 +431,13 @@ export function registerAuthRoutes(app: App) {
         // Generate IDs
         const userId = crypto.randomUUID();
 
-        // Create user
+        // Create user with company association
         await app.db.insert(user).values({
           id: userId,
           email,
           name,
           role: 'admin',
+          companyId,
         });
 
         // Create account with password
