@@ -201,30 +201,32 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(400).send({ error: `Employees not found: ${missingIds.join(', ')}` });
         }
 
-        // Create clock-in entries
-        const entries = [];
+        // Create clock-in entries using batch insert
         const now = new Date();
-
-        for (const employeeId of employeeIds) {
-          const [entry] = await app.db
-            .insert(timeEntries)
-            .values({
-              employeeId,
-              jobSiteId,
-              clockInTime: now,
-              clockedInBy: session.user.id,
-              companyId: session.user.companyId,
-              workDescription: workDescription || null,
-            })
-            .returning();
-
-          entries.push({
-            id: entry.id,
-            employeeId: entry.employeeId,
-            jobSiteId: entry.jobSiteId,
-            clockInTime: entry.clockInTime,
-          });
-        }
+        
+        // Prepare all values for batch insert
+        const insertValues = employeeIds.map(employeeId => ({
+          employeeId,
+          jobSiteId,
+          clockInTime: now,
+          clockedInBy: session.user.id,
+          companyId: session.user.companyId,
+          workDescription: workDescription || null,
+        }));
+        
+        // Execute single batch insert
+        const insertedEntries = await app.db
+          .insert(timeEntries)
+          .values(insertValues)
+          .returning();
+        
+        // Map returned entries to response format
+        const entries = insertedEntries.map(entry => ({
+          id: entry.id,
+          employeeId: entry.employeeId,
+          jobSiteId: entry.jobSiteId,
+          clockInTime: entry.clockInTime,
+        }));
 
         app.logger.info(
           { userId: session.user.id, entryCount: entries.length },
@@ -320,43 +322,57 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(403).send({ error: 'Forbidden' });
         }
 
-        const entries = [];
-        const skipped = [];
         const now = new Date();
 
+        // Fetch all active entries for all requested employees in a single query
+        const activeEntries = await app.db
+          .select()
+          .from(timeEntries)
+          .where(
+            and(
+              inArray(timeEntries.employeeId, employeeIds),
+              isNull(timeEntries.clockOutTime),
+              eq(timeEntries.clockedInBy, session.user.id),
+              eq(timeEntries.companyId, session.user.companyId)
+            )
+          );
+
+        // Create a map of employeeId -> active entry for quick lookup
+        const activeEntriesMap = new Map(activeEntries.map(entry => [entry.employeeId, entry]));
+
+        // Determine which employees have active entries and which should be skipped
+        const entriesToUpdate = [];
+        const skipped = [];
+        
         for (const employeeId of employeeIds) {
-          // Find active time entry for this employee clocked in by current user in the same company
-          const activeEntries = await app.db
-            .select()
-            .from(timeEntries)
-            .where(
-              and(
-                eq(timeEntries.employeeId, employeeId),
-                isNull(timeEntries.clockOutTime),
-                eq(timeEntries.clockedInBy, session.user.id),
-                eq(timeEntries.companyId, session.user.companyId)
-              )
-            );
-
-          if (activeEntries.length > 0) {
-            const [updatedEntry] = await app.db
-              .update(timeEntries)
-              .set({
-                clockOutTime: now,
-                workDescription: workDescription || activeEntries[0].workDescription,
-              })
-              .where(eq(timeEntries.id, activeEntries[0].id))
-              .returning();
-
-            entries.push({
-              id: updatedEntry.id,
-              employeeId: updatedEntry.employeeId,
-              clockOutTime: updatedEntry.clockOutTime,
-            });
+          const activeEntry = activeEntriesMap.get(employeeId);
+          if (activeEntry) {
+            entriesToUpdate.push(activeEntry);
           } else {
-            // Track employees with no active clock-in
             skipped.push(employeeId);
           }
+        }
+
+        let entries = [];
+        
+        // Batch update all active entries if there are any
+        if (entriesToUpdate.length > 0) {
+          const entryIds = entriesToUpdate.map(entry => entry.id);
+          
+          const updatedEntries = await app.db
+            .update(timeEntries)
+            .set({
+              clockOutTime: now,
+              workDescription: workDescription || null,
+            })
+            .where(inArray(timeEntries.id, entryIds))
+            .returning();
+
+          entries = updatedEntries.map(entry => ({
+            id: entry.id,
+            employeeId: entry.employeeId,
+            clockOutTime: entry.clockOutTime,
+          }));
         }
 
         app.logger.info(

@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 import { company, companySession } from '../db/schema.js';
 
 /**
@@ -55,6 +55,15 @@ export async function requireCompanyAuth(
     }
 
     const foundCompany = companies[0];
+
+    // Periodically clean up expired sessions (1 in 100 requests)
+    // This prevents expired sessions from accumulating in the database
+    if (Math.random() < 0.01) {
+      // Run cleanup in background, don't await
+      app.db.delete(companySession)
+        .where(lt(companySession.expiresAt, new Date()))
+        .catch(err => app.logger.error({ err }, 'Failed to cleanup expired company sessions'));
+    }
 
     return {
       company: {

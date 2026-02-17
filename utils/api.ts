@@ -5,6 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Get backend URL from app.json configuration
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
 
+// TODO: On web platforms, AsyncStorage uses localStorage which is vulnerable to XSS.
+// For web deployments, consider using httpOnly cookies instead for token storage.
+// For React Native mobile, AsyncStorage is acceptable.
 const TOKEN_KEY = '@crewclock_auth_token';
 const COMPANY_TOKEN_KEY = '@crewclock_company_token';
 
@@ -206,7 +209,17 @@ export const apiCall = async <T = any>(
     }
 
     // Parse successful response as JSON
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonParseError) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        throw new Error('Received malformed JSON response from server');
+      }
+      // If response is empty or not JSON, return empty object
+      data = {};
+    }
     if (__DEV__) {
       console.log(`[API] Success:`, data);
     }

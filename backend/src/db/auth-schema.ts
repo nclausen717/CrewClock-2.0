@@ -1,10 +1,10 @@
-import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid, unique } from "drizzle-orm/pg-core";
 import { company } from "./schema.js";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   role: text("role").notNull().default("crew_lead"), // 'crew_lead' or 'admin'
@@ -14,7 +14,10 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-});
+}, (table) => ({
+  // Unique constraint: email must be unique within a company (not globally)
+  uniqueEmailPerCompany: unique().on(table.email, table.companyId),
+}));
 
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
