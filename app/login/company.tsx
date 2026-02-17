@@ -11,7 +11,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
-  ImageSourcePropType,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,13 +18,6 @@ import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/ui/Modal';
-
-// Helper to resolve image sources (handles both local and remote URLs)
-function resolveImageSource(source: string | number | ImageSourcePropType | undefined): ImageSourcePropType {
-  if (!source) return { uri: '' };
-  if (typeof source === 'string') return { uri: source };
-  return source as ImageSourcePropType;
-}
 
 export default function CompanyLoginScreen() {
   const router = useRouter();
@@ -50,7 +42,7 @@ export default function CompanyLoginScreen() {
   };
 
   const handleSubmit = async () => {
-    console.log('User tapped submit button', { isLogin, email });
+    if (__DEV__) console.log('User tapped submit button', { isLogin, email });
     
     if (!email || !password || (!isLogin && !name)) {
       showModal('Missing Information', 'Please fill in all required fields', 'error');
@@ -70,16 +62,16 @@ export default function CompanyLoginScreen() {
       if (isLogin) {
         // Login
         await companyLogin(email, password);
-        console.log('Company authentication successful, navigating to role selection');
+        if (__DEV__) console.log('Company authentication successful, navigating to role selection');
         router.replace('/');
       } else {
         // Register
         await companyRegister(email, password, name, city, phone);
-        console.log('Company registration successful, navigating to role selection');
+        if (__DEV__) console.log('Company registration successful, navigating to role selection');
         router.replace('/');
       }
     } catch (error: any) {
-      console.error('Company authentication error:', error);
+      if (__DEV__) console.error('Company authentication error:', error);
       const errorMessage = error.message || 'Authentication failed. Please try again.';
       showModal('Authentication Failed', errorMessage, 'error');
     } finally {
@@ -88,7 +80,7 @@ export default function CompanyLoginScreen() {
   };
 
   const toggleMode = () => {
-    console.log('User toggled between login and register');
+    if (__DEV__) console.log('User toggled between login and register');
     setIsLogin(!isLogin);
   };
 

@@ -64,13 +64,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     const onRoleLogin = segments[0] === 'login' && (segments[1] === 'crew-lead' || segments[1] === 'admin');
     
     if (!company && !onCompanyLogin) {
-      console.log('[Auth] No company session, redirecting to company login');
+      if (__DEV__) console.log('[Auth] No company session, redirecting to company login');
       router.replace('/login/company');
     } else if (company && !user && inAuthGroup) {
-      console.log('[Auth] Company authenticated but no user, redirecting to welcome');
+      if (__DEV__) console.log('[Auth] Company authenticated but no user, redirecting to welcome');
       router.replace('/');
     } else if (company && user && (onWelcome || onRoleLogin || onCompanyLogin)) {
-      console.log('[Auth] Fully authenticated, redirecting to home');
+      if (__DEV__) console.log('[Auth] Fully authenticated, redirecting to home');
       router.replace('/(tabs)/(home)/');
     }
   }, [user, company, segments, isLoading, companyLoading, router]);
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const checkCompanySession = useCallback(async () => {
     try {
       const token = await getCompanyToken();
-      console.log('[Auth] Checking company session, token:', token ? 'present' : 'missing');
+      if (__DEV__) console.log('[Auth] Checking company session, token:', token ? 'present' : 'missing');
       if (!token) {
         setCompany(null);
         setCompanyLoading(false);
@@ -106,13 +106,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         return;
       }
       const response = await companyAuthApiGet<{ company: Company }>('/api/auth/company/me');
-      console.log('[Auth] Company session valid:', response.company.name);
+      if (__DEV__) console.log('[Auth] Company session valid:', response.company.name);
       setCompany(response.company);
       
       // If company session is valid, check user session
       await checkSession();
     } catch (error) {
-      console.error('[Auth] Company session check failed:', error);
+      if (__DEV__) console.error('[Auth] Company session check failed:', error);
       await removeCompanyToken();
       setCompany(null);
       setCompanyLoading(false);
@@ -128,20 +128,20 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   };
 
   const companyRegister = async (email: string, password: string, name: string, city?: string, phone?: string) => {
-    console.log('[Auth] Registering company at /api/companies/register');
+    if (__DEV__) console.log('[Auth] Registering company at /api/companies/register');
     try {
       const response = await companyApiPost<{ company: Company }>('/api/companies/register', { email, password, name, city, phone });
-      console.log('[Auth] Company registration successful:', response);
+      if (__DEV__) console.log('[Auth] Company registration successful:', response);
       // After registration, automatically log in
       await companyLogin(email, password);
     } catch (error: any) {
-      console.error('[Auth] Company registration failed:', error);
+      if (__DEV__) console.error('[Auth] Company registration failed:', error);
       throw error;
     }
   };
 
   const companyLogout = useCallback(async () => {
-    console.log('[Auth] Company logout started');
+    if (__DEV__) console.log('[Auth] Company logout started');
     try {
       try {
         const token = await getCompanyToken();
@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           });
         }
       } catch (error) {
-        console.warn('[Auth] Server company logout failed:', error);
+        if (__DEV__) console.warn('[Auth] Server company logout failed:', error);
       }
     } finally {
       await removeCompanyToken();
@@ -162,7 +162,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setCompanyLoading(false);
       setIsLoading(false);
       
-      console.log('[Auth] Company logout complete, reloading page');
+      if (__DEV__) console.log('[Auth] Company logout complete, reloading page');
       
       // Force a full page reload to clear everything
       setTimeout(() => {
@@ -177,47 +177,47 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   }, [router]);
 
   const login = async (email: string, password: string, role: 'crew_lead' | 'admin') => {
-    console.log('[Auth] Login attempt:', { email, role });
+    if (__DEV__) console.log('[Auth] Login attempt:', { email, role });
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/login' : '/api/auth/admin/login';
     const response = await companyAuthApiPost<{ user: User; token: string }>(endpoint, { email, password });
-    console.log('[Auth] Login successful, saving token');
+    if (__DEV__) console.log('[Auth] Login successful, saving token');
     await saveToken(response.token);
     setUser(response.user);
   };
 
   const register = async (email: string, password: string, name: string, role: 'crew_lead' | 'admin') => {
-    console.log('[Auth] Register attempt:', { email, name, role });
-    console.log('[Auth] Checking company token before registration...');
+    if (__DEV__) console.log('[Auth] Register attempt:', { email, name, role });
+    if (__DEV__) console.log('[Auth] Checking company token before registration...');
     const companyToken = await getCompanyToken();
-    console.log('[Auth] Company token status:', companyToken ? 'present' : 'MISSING');
+    if (__DEV__) console.log('[Auth] Company token status:', companyToken ? 'present' : 'MISSING');
     
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/register' : '/api/auth/admin/register';
-    console.log('[Auth] Calling registration endpoint:', endpoint);
+    if (__DEV__) console.log('[Auth] Calling registration endpoint:', endpoint);
     
     try {
       const response = await companyAuthApiPost<{ user: User }>(endpoint, { email, password, name });
-      console.log('[Auth] Registration successful, now logging in');
+      if (__DEV__) console.log('[Auth] Registration successful, now logging in');
       await login(email, password, role);
     } catch (error) {
-      console.error('[Auth] Registration failed:', error);
+      if (__DEV__) console.error('[Auth] Registration failed:', error);
       throw error;
     }
   };
 
   const logout = useCallback(async () => {
-    console.log('[Auth] Logout started');
+    if (__DEV__) console.log('[Auth] Logout started');
     try {
       try {
         await authenticatedPost('/api/auth/logout', {});
       } catch (error) {
-        console.warn('[Auth] Server logout failed:', error);
+        if (__DEV__) console.warn('[Auth] Server logout failed:', error);
       }
     } finally {
       await removeToken();
       setUser(null);
       setIsLoading(false);
       
-      console.log('[Auth] Logout complete, reloading page');
+      if (__DEV__) console.log('[Auth] Logout complete, reloading page');
       
       // Force a full page reload to clear everything
       setTimeout(() => {
