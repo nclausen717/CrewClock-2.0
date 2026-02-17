@@ -170,10 +170,21 @@ export const apiCall = async <T = any>(
   try {
     if (__DEV__) {
       console.log('[API] Sending fetch request...');
+      console.log('[API] Full request details:', {
+        url,
+        method,
+        headers: requestHeaders,
+        hasBody: !!requestOptions.body
+      });
     }
     const response = await fetch(url, requestOptions);
     if (__DEV__) {
       console.log('[API] Fetch response received:', response.status, response.statusText);
+      console.log('[API] Response headers:', {
+        'content-type': response.headers.get('content-type'),
+        'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+        'access-control-allow-headers': response.headers.get('access-control-allow-headers')
+      });
     }
     
     // Check if response is ok before trying to parse JSON
@@ -225,6 +236,36 @@ export const apiCall = async <T = any>(
     }
     return data;
   } catch (error: any) {
+    // Enhanced error logging for network/CORS issues
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      if (__DEV__) {
+        console.error('═══════════════════════════════════════════════════');
+        console.error('🚨 NETWORK ERROR: Failed to fetch');
+        console.error('═══════════════════════════════════════════════════');
+        console.error('This usually indicates one of the following issues:');
+        console.error('1. CORS Error - Backend is not allowing cross-origin requests');
+        console.error('   - Check that @fastify/cors is installed and configured');
+        console.error('   - Verify X-Company-Token is in allowedHeaders');
+        console.error('2. Network Connectivity - Cannot reach the backend server');
+        console.error('   - Verify backend URL:', BACKEND_URL);
+        console.error('   - Check if backend is running and accessible');
+        console.error('3. SSL/Certificate Issues - HTTPS certificate problems');
+        console.error('4. Firewall/Network Blocking - Request is being blocked');
+        console.error('');
+        console.error('Request details:');
+        console.error('  URL:', url);
+        console.error('  Method:', method);
+        console.error('  Headers:', Object.keys(requestHeaders));
+        console.error('  Backend URL:', BACKEND_URL);
+        console.error('═══════════════════════════════════════════════════');
+      }
+      throw new Error(
+        'Network request failed. This is likely a CORS issue. ' +
+        'Please ensure the backend has CORS enabled with X-Company-Token in allowedHeaders. ' +
+        `Backend URL: ${BACKEND_URL}`
+      );
+    }
+    
     // If it's already an Error with a message, rethrow it
     if (error instanceof Error) {
       if (__DEV__) {

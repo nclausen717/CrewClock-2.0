@@ -204,6 +204,12 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     const companyToken = await getCompanyToken();
     if (__DEV__) console.log('[Auth] Company token status:', companyToken ? 'present' : 'MISSING');
     
+    if (!companyToken) {
+      const error = new Error('Company session not found. Please log in as a company first.');
+      if (__DEV__) console.error('[Auth] Registration blocked - no company token');
+      throw error;
+    }
+    
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/register' : '/api/auth/admin/register';
     if (__DEV__) console.log('[Auth] Calling registration endpoint:', endpoint);
     
@@ -211,8 +217,20 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       const response = await companyAuthApiPost<{ user: User }>(endpoint, { email, password, name });
       if (__DEV__) console.log('[Auth] Registration successful, now logging in');
       await login(email, password, role);
-    } catch (error) {
-      if (__DEV__) console.error('[Auth] Registration failed:', error);
+    } catch (error: any) {
+      if (__DEV__) {
+        console.error('[Auth] Registration failed:', error);
+        console.error('[Auth] Error type:', error.constructor.name);
+        console.error('[Auth] Error message:', error.message);
+      }
+      
+      // Provide more helpful error messages
+      if (error.message && error.message.includes('CORS')) {
+        throw new Error('Unable to connect to server. The backend may need CORS configuration. Please contact support.');
+      } else if (error.message && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error. Please check your internet connection and ensure the backend is running.');
+      }
+      
       throw error;
     }
   };
