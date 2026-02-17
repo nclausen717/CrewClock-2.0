@@ -19,7 +19,7 @@ export function registerCompanyAuthRoutes(app: App) {
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', minLength: 8 },
             name: { type: 'string' },
             city: { type: 'string' },
             phone: { type: 'string' },
@@ -123,7 +123,7 @@ export function registerCompanyAuthRoutes(app: App) {
           required: ['email', 'password'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', minLength: 1 },
           },
         },
         response: {

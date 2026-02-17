@@ -27,6 +27,12 @@ export async function requireAuthWithRole(
 
   const userData = users[0];
 
+  // Verify that user has a companyId (should always be true due to schema, but check for data integrity)
+  if (!userData.companyId) {
+    app.logger.error({ userId: session.user.id }, 'User has no companyId — possible data integrity issue');
+    return reply.status(403).send({ error: 'Account not associated with a company' });
+  }
+
   // Return enhanced session with role and companyId
   return {
     ...session,

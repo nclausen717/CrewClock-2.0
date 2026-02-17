@@ -50,7 +50,7 @@ export const crews = pgTable('crews', {
 export const employees = pgTable('employees', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  email: text('email').unique(), // nullable - only for crew leaders who can login
+  email: text('email'), // nullable - only for crew leaders who can login
   isCrewLeader: boolean('is_crew_leader').default(false).notNull(),
   crewId: uuid('crew_id').references(() => crews.id, { onDelete: 'set null' }), // which crew this employee belongs to
   createdBy: text('created_by'), // admin user id who created this employee, null if self-registered crew leader
@@ -60,7 +60,11 @@ export const employees = pgTable('employees', {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-});
+}, (table) => ({
+  // Unique constraint: email must be unique within a company (not globally)
+  // PostgreSQL treats NULLs as distinct, so multiple employees with null email are allowed
+  uniqueEmailPerCompany: unique().on(table.email, table.companyId),
+}));
 
 // Job sites table - managed by admins
 export const jobSites = pgTable('job_sites', {

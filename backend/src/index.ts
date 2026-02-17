@@ -1,4 +1,5 @@
 import { createApplication } from "@specific-dev/framework";
+import fastifyCors from "@fastify/cors";
 import * as appSchema from './db/schema.js';
 import * as authSchema from './db/auth-schema.js';
 import { registerAuthRoutes } from './routes/auth.js';
@@ -20,6 +21,15 @@ export type App = typeof app;
 
 // Enable Better Auth
 app.withAuth();
+
+// Register CORS
+// TODO: In production, replace `origin: true` with a specific allowed origins list
+// to restrict which domains can access the API. For now, allowing all origins
+// for development and testing purposes.
+await app.fastify.register(fastifyCors, {
+  origin: true, // Allow all origins - should be restricted in production
+  credentials: true,
+});
 
 // Register route modules
 registerCompanyAuthRoutes(app);
