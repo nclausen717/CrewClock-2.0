@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, inArray } from 'drizzle-orm';
 import { timeEntries, employees, jobSites } from '../db/schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
@@ -182,27 +182,30 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(400).send({ error: 'Job site not found' });
         }
 
+        // Validate all employees exist and belong to the same company using single query
+        const validEmployees = await app.db
+          .select()
+          .from(employees)
+          .where(
+            and(
+              inArray(employees.id, employeeIds),
+              eq(employees.companyId, session.user.companyId)
+            )
+          );
+
+        // Check if all requested employees were found
+        if (validEmployees.length !== employeeIds.length) {
+          const foundIds = validEmployees.map(e => e.id);
+          const missingIds = employeeIds.filter(id => !foundIds.includes(id));
+          app.logger.warn({ missingIds }, 'Some employees not found or access denied');
+          return reply.status(400).send({ error: `Employees not found: ${missingIds.join(', ')}` });
+        }
+
         // Create clock-in entries
         const entries = [];
         const now = new Date();
 
         for (const employeeId of employeeIds) {
-          // Validate employee exists and belongs to the same company
-          const emps = await app.db
-            .select()
-            .from(employees)
-            .where(
-              and(
-                eq(employees.id, employeeId),
-                eq(employees.companyId, session.user.companyId)
-              )
-            );
-
-          if (emps.length === 0) {
-            app.logger.warn({ employeeId }, 'Employee not found or access denied');
-            return reply.status(400).send({ error: `Employee ${employeeId} not found` });
-          }
-
           const [entry] = await app.db
             .insert(timeEntries)
             .values({
@@ -276,6 +279,10 @@ export function registerTimeEntriesRoutes(app: App) {
                   },
                 },
               },
+              skipped: {
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
           },
           401: { type: 'object', properties: { error: { type: 'string' } } },
@@ -314,6 +321,7 @@ export function registerTimeEntriesRoutes(app: App) {
         }
 
         const entries = [];
+        const skipped = [];
         const now = new Date();
 
         for (const employeeId of employeeIds) {
@@ -345,17 +353,21 @@ export function registerTimeEntriesRoutes(app: App) {
               employeeId: updatedEntry.employeeId,
               clockOutTime: updatedEntry.clockOutTime,
             });
+          } else {
+            // Track employees with no active clock-in
+            skipped.push(employeeId);
           }
         }
 
         app.logger.info(
-          { userId: session.user.id, entryCount: entries.length },
+          { userId: session.user.id, entryCount: entries.length, skippedCount: skipped.length },
           'Employees clocked out successfully'
         );
 
         return {
           success: true,
           entries,
+          skipped,
         };
       } catch (error) {
         app.logger.error({ err: error, userId: session.user.id, employeeIds }, 'Failed to clock out employees');
