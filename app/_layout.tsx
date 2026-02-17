@@ -88,6 +88,7 @@ export default function RootLayout() {
               <Stack>
                 {/* Welcome/Login screens */}
                 <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="login/company" options={{ headerShown: false }} />
                 <Stack.Screen name="login/admin" options={{ headerShown: false }} />
                 <Stack.Screen name="login/crew-lead" options={{ headerShown: false }} />
                 

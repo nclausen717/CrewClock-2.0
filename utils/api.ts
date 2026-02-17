@@ -120,18 +120,56 @@ export const apiCall = async <T = any>(
 
   try {
     const response = await fetch(url, requestOptions);
-    const data = await response.json();
-
+    
+    // Check if response is ok before trying to parse JSON
     if (!response.ok) {
-      console.error(`[API] Error ${response.status}:`, data);
-      throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
+      console.error(`[API] HTTP Error ${response.status} ${response.statusText}`);
+      
+      // Try to parse error response as JSON
+      let errorMessage = `Request failed with status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        console.error(`[API] Error details:`, errorData);
+      } catch (jsonError) {
+        // If JSON parsing fails, try to get text response
+        try {
+          const textResponse = await response.text();
+          console.error(`[API] Non-JSON error response:`, textResponse.substring(0, 200));
+          
+          // Provide helpful error message based on status code
+          if (response.status === 404) {
+            errorMessage = 'API endpoint not found. The backend may still be building or the route is not registered.';
+          } else if (response.status === 500) {
+            errorMessage = 'Internal server error. Please check the backend logs.';
+          }
+        } catch (textError) {
+          console.error(`[API] Could not read error response`);
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
 
+    // Parse successful response as JSON
+    const data = await response.json();
     console.log(`[API] Success:`, data);
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    // If it's already an Error with a message, rethrow it
+    if (error instanceof Error) {
+      console.error('[API] Request failed:', error.message);
+      throw error;
+    }
+    
+    // Handle JSON parsing errors specifically
+    if (error.message && error.message.includes('JSON')) {
+      console.error('[API] JSON parsing error - response may not be valid JSON');
+      throw new Error('Invalid response from server. The backend may still be building.');
+    }
+    
     console.error('[API] Request failed:', error);
-    throw error;
+    throw new Error('Network request failed. Please check your connection.');
   }
 };
 

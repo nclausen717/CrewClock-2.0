@@ -125,9 +125,16 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   };
 
   const companyRegister = async (email: string, password: string, name: string, city?: string, phone?: string) => {
-    const response = await companyApiPost<{ company: Company }>('/api/auth/company/register', { email, password, name, city, phone });
-    // After registration, automatically log in
-    await companyLogin(email, password);
+    console.log('[Auth] Registering company at /api/companies/register');
+    try {
+      const response = await companyApiPost<{ company: Company }>('/api/companies/register', { email, password, name, city, phone });
+      console.log('[Auth] Company registration successful:', response);
+      // After registration, automatically log in
+      await companyLogin(email, password);
+    } catch (error: any) {
+      console.error('[Auth] Company registration failed:', error);
+      throw error;
+    }
   };
 
   const companyLogout = useCallback(async () => {
