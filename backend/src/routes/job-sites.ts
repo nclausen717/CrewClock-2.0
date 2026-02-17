@@ -306,8 +306,6 @@ export function registerJobSitesRoutes(app: App) {
           return reply.status(404).send({ error: 'Job site not found' });
         }
 
-        const existingSite = existingSites[0];
-
         // Delete job site (cascade will handle related records)
         await app.db.delete(jobSites).where(eq(jobSites.id, id));
 

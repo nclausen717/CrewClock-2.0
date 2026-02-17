@@ -312,14 +312,13 @@ export function registerAuthRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { email, password, name, companyId } = request.body as {
+      const { email, password, name } = request.body as {
         email: string;
         password: string;
         name: string;
-        companyId: string;
       };
 
-      app.logger.info({ email, name, companyId }, 'Crew lead registration attempt');
+      app.logger.info({ email, name }, 'Crew lead registration attempt');
 
       // Require company authentication
       const companyAuth = await requireCompanyAuth(app, request, reply);
@@ -378,7 +377,7 @@ export function registerAuthRoutes(app: App) {
           email,
           isCrewLeader: true,
           createdBy: null,
-          companyId,
+          companyId: companyAuth.company.id,
         });
 
         app.logger.info({ userId, email }, 'Crew lead registered successfully');
@@ -443,14 +442,13 @@ export function registerAuthRoutes(app: App) {
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { email, password, name, companyId } = request.body as {
+      const { email, password, name } = request.body as {
         email: string;
         password: string;
         name: string;
-        companyId: string;
       };
 
-      app.logger.info({ email, name, companyId }, 'Admin registration attempt');
+      app.logger.info({ email, name }, 'Admin registration attempt');
 
       // Require company authentication
       const companyAuth = await requireCompanyAuth(app, request, reply);

@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, or, isNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { employees } from '../db/schema.js';
 import { user as userTable, account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
@@ -487,8 +487,6 @@ export function registerEmployeeRoutes(app: App) {
           app.logger.warn({ employeeId: id }, 'Employee not found or access denied');
           return reply.status(404).send({ error: 'Employee not found' });
         }
-
-        const existingEmployee = existingEmployees[0];
 
         // Delete employee (cascade will handle related records)
         await app.db.delete(employees).where(eq(employees.id, id));

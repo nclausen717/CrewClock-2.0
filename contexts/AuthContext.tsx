@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyAuthApiGet, companyAuthApiPost, companyAuthenticatedPost } from '@/utils/api';
+import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyAuthApiGet, companyAuthApiPost } from '@/utils/api';
 import { useRouter, useSegments } from 'expo-router';
 
 interface User {
