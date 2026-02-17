@@ -8,6 +8,9 @@ import { requireCompanyAuth } from '../utils/company-auth.js';
 export function registerAuthRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
+  // TODO: Add rate limiting to authentication endpoints to prevent brute force attacks
+  // Consider using @fastify/rate-limit with appropriate limits for login/registration
+
   /**
    * POST /api/auth/crew-lead/login
    * Crew lead login endpoint - verifies credentials and ensures user has crew_lead role
@@ -287,7 +290,7 @@ export function registerAuthRoutes(app: App) {
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', minLength: 8 },
             name: { type: 'string' },
           },
         },
@@ -418,7 +421,7 @@ export function registerAuthRoutes(app: App) {
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', minLength: 8 },
             name: { type: 'string' },
           },
         },

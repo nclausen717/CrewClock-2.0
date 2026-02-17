@@ -6,15 +6,16 @@ import { user as userTable, account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
 
 /**
- * Generate a secure random password
+ * Generate a secure random password using Node.js crypto
  * 8-12 characters with mix of letters and numbers
  */
 function generatePassword(): string {
-  const length = Math.floor(Math.random() * 5) + 8; // 8-12 characters
+  const length = 8 + Math.floor(crypto.randomBytes(1)[0] % 5); // 8-12 characters
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let password = '';
+  const randomBytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+    password += chars.charAt(randomBytes[i] % chars.length);
   }
   return password;
 }
