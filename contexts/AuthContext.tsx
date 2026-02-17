@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   useEffect(() => {
     checkCompanySession();
-  }, []);
+  }, [checkCompanySession]);
 
   useEffect(() => {
     if (companyLoading || isLoading) return;
@@ -74,6 +74,26 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       router.replace('/(tabs)/(home)/');
     }
   }, [user, company, segments, isLoading, companyLoading, router]);
+
+  const checkSession = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        setUser(null);
+        setIsLoading(false);
+        setCompanyLoading(false);
+        return;
+      }
+      const response = await authenticatedGet<{ user: User }>('/api/auth/me');
+      setUser(response.user);
+    } catch (error) {
+      await removeToken();
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+      setCompanyLoading(false);
+    }
+  }, []);
 
   const checkCompanySession = useCallback(async () => {
     try {
@@ -99,26 +119,6 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setIsLoading(false);
     }
   }, [checkSession]);
-
-  const checkSession = useCallback(async () => {
-    try {
-      const token = await getToken();
-      if (!token) {
-        setUser(null);
-        setIsLoading(false);
-        setCompanyLoading(false);
-        return;
-      }
-      const response = await authenticatedGet<{ user: User }>('/api/auth/me');
-      setUser(response.user);
-    } catch (error) {
-      await removeToken();
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-      setCompanyLoading(false);
-    }
-  }, []);
 
   const companyLogin = async (email: string, password: string) => {
     const response = await companyApiPost<{ company: Company; token: string }>('/api/auth/company/login', { email, password });
