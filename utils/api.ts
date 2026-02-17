@@ -50,6 +50,7 @@ export const saveCompanyToken = async (token: string): Promise<void> => {
 export const getCompanyToken = async (): Promise<string | null> => {
   try {
     const token = await AsyncStorage.getItem(COMPANY_TOKEN_KEY);
+    console.log('[API] Retrieved company token from storage:', token ? `${token.substring(0, 8)}...` : 'null');
     return token;
   } catch (error) {
     console.error('[API] Error getting company token:', error);
@@ -98,6 +99,9 @@ export const apiCall = async <T = any>(
     const token = await getToken();
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
+      console.log('[API] Added Authorization header');
+    } else {
+      console.warn('[API] Auth required but no token found');
     }
   }
 
@@ -106,8 +110,13 @@ export const apiCall = async <T = any>(
     const companyToken = await getCompanyToken();
     if (companyToken) {
       requestHeaders['X-Company-Token'] = companyToken;
+      console.log('[API] Added X-Company-Token header:', `${companyToken.substring(0, 8)}...`);
+    } else {
+      console.warn('[API] Company auth required but no company token found');
     }
   }
+
+  console.log('[API] Request headers:', Object.keys(requestHeaders));
 
   const requestOptions: RequestInit = {
     method,
@@ -116,10 +125,13 @@ export const apiCall = async <T = any>(
 
   if (body && method !== 'GET') {
     requestOptions.body = JSON.stringify(body);
+    console.log('[API] Request body:', JSON.stringify(body).substring(0, 100));
   }
 
   try {
+    console.log('[API] Sending fetch request...');
     const response = await fetch(url, requestOptions);
+    console.log('[API] Fetch response received:', response.status, response.statusText);
     
     // Check if response is ok before trying to parse JSON
     if (!response.ok) {
@@ -159,6 +171,7 @@ export const apiCall = async <T = any>(
     // If it's already an Error with a message, rethrow it
     if (error instanceof Error) {
       console.error('[API] Request failed:', error.message);
+      console.error('[API] Error stack:', error.stack);
       throw error;
     }
     

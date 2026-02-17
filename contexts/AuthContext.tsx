@@ -78,6 +78,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const checkCompanySession = async () => {
     try {
       const token = await getCompanyToken();
+      console.log('[Auth] Checking company session, token:', token ? 'present' : 'missing');
       if (!token) {
         setCompany(null);
         setCompanyLoading(false);
@@ -85,11 +86,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         return;
       }
       const response = await companyAuthApiGet<{ company: Company }>('/api/auth/company/me');
+      console.log('[Auth] Company session valid:', response.company.name);
       setCompany(response.company);
       
       // If company session is valid, check user session
       await checkSession();
     } catch (error) {
+      console.error('[Auth] Company session check failed:', error);
       await removeCompanyToken();
       setCompany(null);
       setCompanyLoading(false);
@@ -171,16 +174,31 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string, role: 'crew_lead' | 'admin') => {
+    console.log('[Auth] Login attempt:', { email, role });
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/login' : '/api/auth/admin/login';
     const response = await companyAuthApiPost<{ user: User; token: string }>(endpoint, { email, password });
+    console.log('[Auth] Login successful, saving token');
     await saveToken(response.token);
     setUser(response.user);
   };
 
   const register = async (email: string, password: string, name: string, role: 'crew_lead' | 'admin') => {
+    console.log('[Auth] Register attempt:', { email, name, role });
+    console.log('[Auth] Checking company token before registration...');
+    const companyToken = await getCompanyToken();
+    console.log('[Auth] Company token status:', companyToken ? 'present' : 'MISSING');
+    
     const endpoint = role === 'crew_lead' ? '/api/auth/crew-lead/register' : '/api/auth/admin/register';
-    const response = await companyAuthApiPost<{ user: User }>(endpoint, { email, password, name });
-    await login(email, password, role);
+    console.log('[Auth] Calling registration endpoint:', endpoint);
+    
+    try {
+      const response = await companyAuthApiPost<{ user: User }>(endpoint, { email, password, name });
+      console.log('[Auth] Registration successful, now logging in');
+      await login(email, password, role);
+    } catch (error) {
+      console.error('[Auth] Registration failed:', error);
+      throw error;
+    }
   };
 
   const logout = useCallback(async () => {
