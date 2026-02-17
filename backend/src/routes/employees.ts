@@ -1,6 +1,7 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and } from 'drizzle-orm';
+import { randomInt, randomBytes } from 'crypto';
 import { employees } from '../db/schema.js';
 import { user as userTable, account } from '../db/auth-schema.js';
 import { requireAuthWithRole } from '../utils/auth.js';
@@ -8,15 +9,15 @@ import { requireAuthWithRole } from '../utils/auth.js';
 /**
  * Generate a cryptographically secure random password using Node.js crypto
  * 8-12 characters with mix of letters and numbers
- * Uses crypto.randomInt() and crypto.randomBytes() for secure randomness
+ * Uses randomInt() and randomBytes() for secure randomness
  */
 function generatePassword(): string {
-  const length = crypto.randomInt(8, 13); // 8-12 characters (13 is exclusive upper bound)
+  const length = randomInt(8, 13); // 8-12 characters (13 is exclusive upper bound)
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let password = '';
-  const randomBytes = crypto.randomBytes(length);
+  const randBytes = randomBytes(length);
   for (let i = 0; i < length; i++) {
-    password += chars.charAt(randomBytes[i] % chars.length);
+    password += chars.charAt(randBytes[i] % chars.length);
   }
   return password;
 }

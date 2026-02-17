@@ -29,6 +29,8 @@ app.withAuth();
 await app.fastify.register(fastifyCors, {
   origin: true, // Allow all origins - should be restricted in production
   credentials: true,
+  allowedHeaders: ['Content-Type', 'X-Company-Token', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 });
 
 // Register route modules
