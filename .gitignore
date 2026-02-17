@@ -35,4 +35,6 @@ ios/
 pnpm-lock.yaml
 package-lock.json
 
-
+# Development artifacts
+chat_history.json
+pulls/
