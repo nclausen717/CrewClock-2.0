@@ -141,8 +141,15 @@ export const apiCall = async <T = any>(
     try {
       data = await response.json();
     } catch (error) {
-      // If response body is empty or contains invalid JSON, return empty object
-      console.warn('[API] Response body is empty or contains invalid JSON, returning empty object:', error);
+      // Check if the response was expected to contain JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        // If response claims to be JSON but parsing failed, this is an error
+        console.error('[API] Response claimed to be JSON but parsing failed:', error);
+        throw new Error('Received malformed JSON response from server');
+      }
+      // If response is empty or not JSON, return empty object
+      console.warn('[API] Response body is empty or not JSON, returning empty object');
       data = {};
     }
 
