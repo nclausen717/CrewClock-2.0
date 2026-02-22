@@ -201,6 +201,29 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(400).send({ error: `Employees not found: ${missingIds.join(', ')}` });
         }
 
+        // Check for already-clocked-in employees (no duplicate clock-in)
+        const alreadyActive = await app.db
+          .select()
+          .from(timeEntries)
+          .where(
+            and(
+              inArray(timeEntries.employeeId, employeeIds),
+              isNull(timeEntries.clockOutTime),
+              eq(timeEntries.companyId, session.user.companyId)
+            )
+          );
+
+        if (alreadyActive.length > 0) {
+          const activeIds = alreadyActive.map(e => e.employeeId);
+          const activeNames = validEmployees
+            .filter(e => activeIds.includes(e.id))
+            .map(e => e.name);
+          app.logger.warn({ activeIds }, 'Some employees are already clocked in');
+          return reply.status(400).send({
+            error: `The following employees are already clocked in: ${activeNames.join(', ')}`,
+          });
+        }
+
         // Create clock-in entries using batch insert
         const now = new Date();
         
@@ -535,6 +558,23 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(400).send({ error: 'Job site not found' });
         }
 
+        // Check if crew leader is already clocked in
+        const existingActive = await app.db
+          .select()
+          .from(timeEntries)
+          .where(
+            and(
+              eq(timeEntries.employeeId, session.user.id),
+              isNull(timeEntries.clockOutTime),
+              eq(timeEntries.companyId, session.user.companyId)
+            )
+          );
+
+        if (existingActive.length > 0) {
+          app.logger.warn({ userId: session.user.id }, 'Crew leader is already clocked in');
+          return reply.status(400).send({ error: 'You are already clocked in' });
+        }
+
         // Create clock-in entry with companyId
         const now = new Date();
 
@@ -634,18 +674,21 @@ export function registerTimeEntriesRoutes(app: App) {
           return reply.status(400).send({ error: 'No active clock-in found' });
         }
 
-        // Update the time entry with clock-out time
+        // Update ALL active time entries with clock-out time
         const now = new Date();
+        const activeEntryIds = activeEntries.map(e => e.id);
 
-        const [updatedEntry] = await app.db
+        const updatedEntries = await app.db
           .update(timeEntries)
           .set({
             clockOutTime: now,
           })
-          .where(eq(timeEntries.id, activeEntries[0].id))
+          .where(inArray(timeEntries.id, activeEntryIds))
           .returning();
 
-        app.logger.info({ userId: session.user.id, entryId: updatedEntry.id }, 'Crew leader clocked out successfully');
+        const updatedEntry = updatedEntries[0];
+
+        app.logger.info({ userId: session.user.id, entryCount: updatedEntries.length }, 'Crew leader clocked out successfully');
 
         return {
           success: true,

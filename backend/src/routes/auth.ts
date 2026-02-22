@@ -4,12 +4,26 @@ import { eq } from 'drizzle-orm';
 import { user, account, session } from '../db/auth-schema.js';
 import { employees } from '../db/schema.js';
 import { requireCompanyAuth } from '../utils/company-auth.js';
+import rateLimit from '@fastify/rate-limit';
 
-export function registerAuthRoutes(app: App) {
+/**
+ * Validates password strength: 8+ chars, 1 uppercase, 1 lowercase, 1 number.
+ */
+function validatePasswordStrength(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters long';
+  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
+  if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
+  if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
+  return null;
+}
+
+export async function registerAuthRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
-  // TODO: Add rate limiting to authentication endpoints to prevent brute force attacks
-  // Consider using @fastify/rate-limit with appropriate limits for login/registration
+  // Register rate limiting plugin
+  await app.fastify.register(rateLimit, {
+    global: false, // Only apply to routes that opt-in
+  });
 
   /**
    * POST /api/auth/crew-lead/login
@@ -18,6 +32,12 @@ export function registerAuthRoutes(app: App) {
   app.fastify.post(
     '/api/auth/crew-lead/login',
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         description: 'Crew lead login',
         tags: ['auth'],
@@ -150,6 +170,12 @@ export function registerAuthRoutes(app: App) {
   app.fastify.post(
     '/api/auth/admin/login',
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         description: 'Admin login',
         tags: ['auth'],
@@ -282,6 +308,12 @@ export function registerAuthRoutes(app: App) {
   app.fastify.post(
     '/api/auth/crew-lead/register',
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         description: 'Crew lead registration',
         tags: ['auth'],
@@ -326,6 +358,13 @@ export function registerAuthRoutes(app: App) {
       // Require company authentication
       const companyAuth = await requireCompanyAuth(app, request, reply);
       if (!companyAuth) return; // Error response already sent
+
+      // Validate password strength
+      const passwordError = validatePasswordStrength(password);
+      if (passwordError) {
+        app.logger.warn({ email }, `Crew lead registration failed: ${passwordError}`);
+        return reply.status(400).send({ error: passwordError });
+      }
 
       try {
         // Check if user already exists
@@ -413,6 +452,12 @@ export function registerAuthRoutes(app: App) {
   app.fastify.post(
     '/api/auth/admin/register',
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         description: 'Admin registration',
         tags: ['auth'],
@@ -441,6 +486,9 @@ export function registerAuthRoutes(app: App) {
             },
           },
           400: { type: 'object', properties: { error: { type: 'string' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+          409: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
     },
@@ -457,13 +505,44 @@ export function registerAuthRoutes(app: App) {
       const companyAuth = await requireCompanyAuth(app, request, reply);
       if (!companyAuth) return; // Error response already sent
 
+      // Validate password strength
+      const passwordError = validatePasswordStrength(password);
+      if (passwordError) {
+        app.logger.warn({ email }, `Admin registration failed: ${passwordError}`);
+        return reply.status(400).send({ error: passwordError });
+      }
+
       try {
+        // Check if any admin already exists for this company
+        const existingAdmins = await app.db
+          .select()
+          .from(user)
+          .where(eq(user.companyId, companyAuth.company.id));
+        const adminExists = existingAdmins.some(u => u.role === 'admin');
+
+        if (adminExists) {
+          // If an admin already exists, require the requester to be an authenticated admin
+          const requireAuth = app.requireAuth();
+          const authSession = await requireAuth(request, reply);
+          if (!authSession) return; // Error already sent
+
+          // Fetch requesting user's role
+          const requestingUsers = await app.db
+            .select()
+            .from(user)
+            .where(eq(user.id, authSession.user.id));
+          if (requestingUsers.length === 0 || requestingUsers[0].role !== 'admin') {
+            app.logger.warn({ email }, 'Admin registration failed: requester is not an admin');
+            return reply.status(403).send({ error: 'Only an existing admin can register additional admins' });
+          }
+        }
+
         // Check if user already exists
         const existingUsers = await app.db.select().from(user).where(eq(user.email, email));
 
         if (existingUsers.length > 0) {
           app.logger.warn({ email }, 'Admin registration failed: email already exists');
-          return reply.status(400).send({ error: 'Email already registered' });
+          return reply.status(409).send({ error: 'An account with this email already exists' });
         }
 
         // Hash password

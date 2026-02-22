@@ -23,11 +23,19 @@ export type App = typeof app;
 app.withAuth();
 
 // Register CORS
-// TODO: In production, replace `origin: true` with a specific allowed origins list
-// to restrict which domains can access the API. For now, allowing all origins
-// for development and testing purposes.
+// Allowed origins are configured via ALLOWED_ORIGINS environment variable (comma-separated).
+// Defaults to localhost dev origins if not set.
+// Requests with no Origin header (e.g. server-to-server, curl) are allowed by design.
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8081', 'http://localhost:19006'];
 await app.fastify.register(fastifyCors, {
-  origin: true, // Allow all origins - should be restricted in production
+  origin: (origin, cb) => {
+    // Allow requests without an Origin header (server-to-server, native apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not allowed by CORS'), false);
+    }
+  },
   credentials: true,
   allowedHeaders: ['Content-Type', 'X-Company-Token', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -35,7 +43,7 @@ await app.fastify.register(fastifyCors, {
 
 // Register route modules
 registerCompanyAuthRoutes(app);
-registerAuthRoutes(app);
+await registerAuthRoutes(app);
 registerEmployeeRoutes(app);
 registerJobSitesRoutes(app);
 registerTimeEntriesRoutes(app);
