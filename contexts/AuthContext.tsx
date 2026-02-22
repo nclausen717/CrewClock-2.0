@@ -256,8 +256,8 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         if (typeof window !== 'undefined') {
           window.location.href = '/';
         } else {
-          // For native platforms, navigate to company login
-          router.replace('/login/company');
+          // For native platforms, navigate to welcome/role selection (company session still active)
+          router.replace('/');
         }
       }, 100);
     }

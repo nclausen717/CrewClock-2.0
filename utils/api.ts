@@ -1,13 +1,21 @@
 
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Get backend URL from app.json configuration
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
 
-// TODO: On web platforms, AsyncStorage uses localStorage which is vulnerable to XSS.
-// For web deployments, consider using httpOnly cookies instead for token storage.
-// For React Native mobile, AsyncStorage is acceptable.
+// Security warning: On web platforms, AsyncStorage maps to localStorage which is
+// vulnerable to XSS attacks. Auth tokens stored here can be stolen by malicious scripts.
+// For production web deployments, prefer httpOnly cookies managed server-side.
+// On React Native mobile, AsyncStorage is acceptable.
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  console.warn(
+    '[Security] Auth tokens are stored in localStorage on web. ' +
+    'This is vulnerable to XSS attacks. For production, use httpOnly cookies.'
+  );
+}
 const TOKEN_KEY = '@crewclock_auth_token';
 const COMPANY_TOKEN_KEY = '@crewclock_company_token';
 
@@ -68,7 +76,7 @@ export const getCompanyToken = async (): Promise<string | null> => {
   try {
     const token = await AsyncStorage.getItem(COMPANY_TOKEN_KEY);
     if (__DEV__) {
-      console.log('[API] Retrieved company token from storage:', token ? `${token.substring(0, 8)}...` : 'null');
+      console.log('[API] Retrieved company token from storage:', token ? 'present' : 'null');
     }
     return token;
   } catch (error) {
@@ -130,9 +138,7 @@ export const apiCall = async <T = any>(
         console.log('[API] Added Authorization header');
       }
     } else {
-      if (__DEV__) {
-        console.warn('[API] Auth required but no token found');
-      }
+      throw new Error('Authentication required but no auth token found. Please log in again.');
     }
   }
 
@@ -142,12 +148,10 @@ export const apiCall = async <T = any>(
     if (companyToken) {
       requestHeaders['X-Company-Token'] = companyToken;
       if (__DEV__) {
-        console.log('[API] Added X-Company-Token header:', `${companyToken.substring(0, 8)}...`);
+        console.log('[API] Added X-Company-Token header:', '[REDACTED]');
       }
     } else {
-      if (__DEV__) {
-        console.warn('[API] Company auth required but no company token found');
-      }
+      throw new Error('Company authentication required but no company token found. Please log in again.');
     }
   }
 
