@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyAuthApiGet, companyAuthApiPost } from '@/utils/api';
+import { apiPost, apiCall, authenticatedGet, authenticatedPost, saveToken, getToken, removeToken, saveCompanyToken, getCompanyToken, removeCompanyToken, companyApiPost, companyAuthApiGet, companyAuthApiPost, BACKEND_URL } from '@/utils/api';
 import { useRouter, useSegments } from 'expo-router';
 
 interface User {
@@ -227,9 +227,11 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       
       // Provide more helpful error messages
       if (error.message && error.message.includes('CORS')) {
-        throw new Error('Unable to connect to server. The backend may need CORS configuration. Please contact support.');
-      } else if (error.message && error.message.includes('Failed to fetch')) {
-        throw new Error('Network error. Please check your internet connection and ensure the backend is running.');
+        const detail = __DEV__ ? ` (${BACKEND_URL})` : '';
+        throw new Error(`Unable to connect to server${detail}. The backend may need CORS configuration. Please contact support.`);
+      } else if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('Network request failed'))) {
+        const detail = __DEV__ ? ` at ${BACKEND_URL}` : '';
+        throw new Error(`Cannot reach server${detail}. Please check your internet connection and ensure the backend is running.`);
       }
       
       throw error;
