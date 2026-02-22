@@ -23,43 +23,13 @@ export type App = typeof app;
 app.withAuth();
 
 // Register CORS
-// Allowed origins are configured via ALLOWED_ORIGINS environment variable (comma-separated).
-// Defaults to localhost dev origins if not set.
-// Requests with no Origin header (e.g. server-to-server, curl, native mobile apps) are allowed by design.
-// In development mode (NODE_ENV !== 'production') all origins are allowed to ease local testing.
-const isDevelopment = process.env.NODE_ENV !== 'production';
-if (isDevelopment) {
-  app.logger.warn('CORS: running in development mode — all origins are allowed. Set NODE_ENV=production to enforce origin restrictions.');
-}
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-  'http://localhost:8081',
-  'http://localhost:19006',
-  'http://localhost:3000',
-];
+// All origins are allowed because this API is accessed from a Natively.dev WebView wrapper,
+// which sends unpredictable or null Origin headers. The Specular hosting platform does not
+// support environment variable configuration, so origin restrictions cannot be enforced there.
+// Security is maintained through authentication tokens (Bearer tokens and X-Company-Token)
+// required on all protected endpoints, rather than relying on CORS origin restrictions.
 await app.fastify.register(fastifyCors, {
-  origin: (origin, cb) => {
-    // Allow requests without an Origin header (server-to-server, native apps, curl, etc.)
-    if (!origin) {
-      cb(null, true);
-      return;
-    }
-    // In development, allow all origins for easier local/device testing
-    if (isDevelopment) {
-      cb(null, true);
-      return;
-    }
-    // Allow Expo Go / exp:// scheme origins (physical device development)
-    if (origin.startsWith('exp://') || origin.startsWith('exps://')) {
-      cb(null, true);
-      return;
-    }
-    if (allowedOrigins.includes(origin)) {
-      cb(null, true);
-    } else {
-      app.logger.warn(`CORS: rejected request from origin "${origin}". Add it to ALLOWED_ORIGINS env var to allow it.`);
-      cb(new Error('Not allowed by CORS'), false);
-    }
-  },
+  origin: true,
   credentials: true,
   allowedHeaders: ['Content-Type', 'X-Company-Token', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
