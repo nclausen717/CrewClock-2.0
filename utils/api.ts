@@ -177,7 +177,7 @@ export const apiCall = async <T = any>(
       console.log('[API] Full request details:', {
         url,
         method,
-        headers: requestHeaders,
+        headers: Object.keys(requestHeaders),
         hasBody: !!requestOptions.body
       });
     }

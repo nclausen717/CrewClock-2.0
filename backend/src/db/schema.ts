@@ -29,11 +29,11 @@ export const companySession = pgTable('company_session', {
 });
 
 // Crews table - groups of employees led by a crew leader
-// Note: crewLeaderId is defined below employees due to foreign key ordering
+// Note: crewLeaderId references employees using a lazy arrow function, which resolves at migration/query time
 export const crews = pgTable('crews', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  crewLeaderId: uuid('crew_leader_id'), // nullable - crew leader assigned to this crew
+  crewLeaderId: uuid('crew_leader_id').references(() => employees.id, { onDelete: 'set null' }), // nullable - crew leader assigned to this crew
   createdBy: text('created_by').notNull(), // admin user id who created the crew
   companyId: uuid('company_id').notNull().references(() => company.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

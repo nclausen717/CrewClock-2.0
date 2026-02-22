@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { user, account, session } from '../db/auth-schema.js';
 import { employees } from '../db/schema.js';
 import { requireCompanyAuth } from '../utils/company-auth.js';
@@ -79,8 +79,10 @@ export async function registerAuthRoutes(app: App) {
       if (!companyAuth) return; // Error response already sent
 
       try {
-        // Find user by email
-        const users = await app.db.select().from(user).where(eq(user.email, email));
+        // Find user by email scoped to the authenticated company
+        const users = await app.db.select().from(user).where(
+          and(eq(user.email, email), eq(user.companyId, companyAuth.company.id))
+        );
 
         if (users.length === 0) {
           app.logger.warn({ email }, 'Crew lead login failed: user not found');
@@ -88,18 +90,6 @@ export async function registerAuthRoutes(app: App) {
         }
 
         const foundUser = users[0];
-
-        // Verify user belongs to the authenticated company
-        if (foundUser.companyId !== companyAuth.company.id) {
-          const logContext = {
-            email,
-            userId: foundUser.id,
-            userCompanyId: foundUser.companyId,
-            authCompanyId: companyAuth.company.id
-          };
-          app.logger.warn(logContext, 'Crew lead login failed: user does not belong to authenticated company');
-          return reply.status(401).send({ error: 'Invalid credentials' });
-        }
 
         // Verify role is crew_lead
         if (foundUser.role !== 'crew_lead') {
@@ -217,8 +207,10 @@ export async function registerAuthRoutes(app: App) {
       if (!companyAuth) return; // Error response already sent
 
       try {
-        // Find user by email
-        const users = await app.db.select().from(user).where(eq(user.email, email));
+        // Find user by email scoped to the authenticated company
+        const users = await app.db.select().from(user).where(
+          and(eq(user.email, email), eq(user.companyId, companyAuth.company.id))
+        );
 
         if (users.length === 0) {
           app.logger.warn({ email }, 'Admin login failed: user not found');
@@ -226,18 +218,6 @@ export async function registerAuthRoutes(app: App) {
         }
 
         const foundUser = users[0];
-
-        // Verify user belongs to the authenticated company
-        if (foundUser.companyId !== companyAuth.company.id) {
-          const logContext = {
-            email,
-            userId: foundUser.id,
-            userCompanyId: foundUser.companyId,
-            authCompanyId: companyAuth.company.id
-          };
-          app.logger.warn(logContext, 'Admin login failed: user does not belong to authenticated company');
-          return reply.status(401).send({ error: 'Invalid credentials' });
-        }
 
         // Verify role is admin
         if (foundUser.role !== 'admin') {
@@ -367,19 +347,21 @@ export async function registerAuthRoutes(app: App) {
       }
 
       try {
-        // Check if user already exists
-        const existingUsers = await app.db.select().from(user).where(eq(user.email, email));
+        // Check if user already exists within this company
+        const existingUsers = await app.db.select().from(user).where(
+          and(eq(user.email, email), eq(user.companyId, companyAuth.company.id))
+        );
 
         if (existingUsers.length > 0) {
           app.logger.warn({ email }, 'Crew lead registration failed: email already exists');
           return reply.status(409).send({ error: 'An account with this email already exists' });
         }
 
-        // Check if employee already exists
+        // Check if employee already exists within this company
         const existingEmployees = await app.db
           .select()
           .from(employees)
-          .where(eq(employees.email, email));
+          .where(and(eq(employees.email, email), eq(employees.companyId, companyAuth.company.id)));
 
         if (existingEmployees.length > 0) {
           app.logger.warn({ email }, 'Crew lead registration failed: employee with email already exists');
@@ -515,10 +497,11 @@ export async function registerAuthRoutes(app: App) {
       try {
         // Check if any admin already exists for this company
         const existingAdmins = await app.db
-          .select()
+          .select({ id: user.id })
           .from(user)
-          .where(eq(user.companyId, companyAuth.company.id));
-        const adminExists = existingAdmins.some(u => u.role === 'admin');
+          .where(and(eq(user.companyId, companyAuth.company.id), eq(user.role, 'admin')))
+          .limit(1);
+        const adminExists = existingAdmins.length > 0;
 
         if (adminExists) {
           // If an admin already exists, require the requester to be an authenticated admin
@@ -537,8 +520,10 @@ export async function registerAuthRoutes(app: App) {
           }
         }
 
-        // Check if user already exists
-        const existingUsers = await app.db.select().from(user).where(eq(user.email, email));
+        // Check if user already exists within this company
+        const existingUsers = await app.db.select().from(user).where(
+          and(eq(user.email, email), eq(user.companyId, companyAuth.company.id))
+        );
 
         if (existingUsers.length > 0) {
           app.logger.warn({ email }, 'Admin registration failed: email already exists');
