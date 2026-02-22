@@ -138,6 +138,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     await saveCompanyToken(response.token);
     setCompany(response.company);
     setCompanyLoading(false);
+    setIsLoading(false);
   };
 
   const companyRegister = async (email: string, password: string, name: string, city?: string, phone?: string) => {
