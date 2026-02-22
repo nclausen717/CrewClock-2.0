@@ -226,9 +226,9 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       }
       
       // Provide more helpful error messages
-      if (error.message && error.message.includes('CORS')) {
-        const detail = __DEV__ ? ` (${BACKEND_URL})` : '';
-        throw new Error(`Unable to connect to server${detail}. The backend may need CORS configuration. Please contact support.`);
+      if (error.message && (error.message.includes('CORS') || error.message.includes('Unable to connect'))) {
+        const detail = __DEV__ ? ` ${BACKEND_URL}` : '';
+        throw new Error(`Authentication Failed. Unable to connect to server${detail}. The server may be unavailable or still starting up. Please try again shortly or contact support.`);
       } else if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('Network request failed'))) {
         const detail = __DEV__ ? ` at ${BACKEND_URL}` : '';
         throw new Error(`Cannot reach server${detail}. Please check your internet connection and ensure the backend is running.`);
