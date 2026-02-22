@@ -42,7 +42,7 @@ await app.fastify.register(fastifyCors, {
 });
 
 // Register route modules
-registerCompanyAuthRoutes(app);
+await registerCompanyAuthRoutes(app);
 await registerAuthRoutes(app);
 registerEmployeeRoutes(app);
 registerJobSitesRoutes(app);

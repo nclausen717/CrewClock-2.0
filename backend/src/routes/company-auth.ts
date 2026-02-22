@@ -2,8 +2,25 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { company, companySession } from '../db/schema.js';
+import rateLimit from '@fastify/rate-limit';
 
-export function registerCompanyAuthRoutes(app: App) {
+/**
+ * Validates password strength: 8+ chars, 1 uppercase, 1 lowercase, 1 number.
+ */
+function validatePasswordStrength(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters long';
+  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
+  if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
+  if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
+  return null;
+}
+
+export async function registerCompanyAuthRoutes(app: App) {
+  // Register rate limiting plugin
+  await app.fastify.register(rateLimit, {
+    global: false, // Only apply to routes that opt-in
+  });
+
   /**
    * POST /api/companies/register
    * Company registration endpoint
@@ -11,6 +28,12 @@ export function registerCompanyAuthRoutes(app: App) {
   app.fastify.post(
     '/api/companies/register',
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         description: 'Company registration',
         tags: ['auth'],
@@ -41,6 +64,7 @@ export function registerCompanyAuthRoutes(app: App) {
               },
             },
           },
+          400: { type: 'object', properties: { error: { type: 'string' } } },
           409: { type: 'object', properties: { error: { type: 'string' } } },
         },
       },
@@ -55,6 +79,12 @@ export function registerCompanyAuthRoutes(app: App) {
       };
 
       app.logger.info({ email, name }, 'Company registration attempt');
+
+      const passwordError = validatePasswordStrength(password);
+      if (passwordError) {
+        app.logger.warn({ email }, `Company registration failed: ${passwordError}`);
+        return reply.status(400).send({ error: passwordError });
+      }
 
       try {
         // Check if company already exists
@@ -115,6 +145,12 @@ export function registerCompanyAuthRoutes(app: App) {
   app.fastify.post(
     '/api/auth/company/login',
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         description: 'Company login',
         tags: ['auth'],
