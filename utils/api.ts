@@ -4,7 +4,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // Get backend URL from app.json configuration
+// To change the backend URL, update expo.extra.backendUrl in app.json or app.config.js.
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
+
+if (__DEV__) {
+  console.log('[API] Resolved BACKEND_URL:', BACKEND_URL);
+  if (BACKEND_URL === 'http://localhost:3000' && Platform.OS !== 'web') {
+    console.warn(
+      '[API] WARNING: BACKEND_URL is set to localhost (http://localhost:3000) but the platform is not web. ' +
+      'Real devices and simulators cannot reach localhost. ' +
+      'Set expo.extra.backendUrl in app.json to your backend\'s network address.'
+    );
+  }
+}
 
 // Security warning: On web platforms, AsyncStorage maps to localStorage which is
 // vulnerable to XSS attacks. Auth tokens stored here can be stolen by malicious scripts.
