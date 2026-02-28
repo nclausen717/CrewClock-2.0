@@ -9,6 +9,7 @@ import { registerJobSitesRoutes } from './routes/job-sites.js';
 import { registerTimeEntriesRoutes } from './routes/time-entries.js';
 import { registerReportsRoutes } from './routes/reports.js';
 import { registerCrewRoutes } from './routes/crews.js';
+import { registerHealthRoutes } from './routes/health.js';
 
 // Combine both schemas for full database type support
 const schema = { ...appSchema, ...authSchema };
@@ -43,6 +44,7 @@ registerJobSitesRoutes(app);
 registerTimeEntriesRoutes(app);
 registerReportsRoutes(app);
 registerCrewRoutes(app);
+registerHealthRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
