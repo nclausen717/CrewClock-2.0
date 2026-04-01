@@ -1,5 +1,5 @@
 // Global error logging for runtime errors
-// Captures console.log/warn/error and sends to Natively server for AI debugging
+// Captures console.log/warn/error and sends to Newly server for AI debugging
 
 // Declare __DEV__ global (React Native global for development mode detection)
 declare const __DEV__: boolean;
@@ -117,7 +117,7 @@ const flushLogs = async () => {
           fetchErrorLogged = true;
           // Use a different method to avoid recursion - write directly without going through our intercept
           if (typeof window !== 'undefined' && window.console) {
-            (window.console as any).__proto__.log.call(console, '[Natively] Fetch error (will not repeat):', e.message || e);
+            (window.console as any).__proto__.log.call(console, '[Newly] Fetch error (will not repeat):', e.message || e);
           }
         }
       });
@@ -179,6 +179,40 @@ const sendErrorToParent = (level: string, message: string, data: any) => {
   } catch (error) {
     // Silently fail
   }
+};
+
+// Function to extract meaningful source location from stack trace
+const extractSourceLocation = (stack: string): string => {
+  if (!stack) return '';
+
+  // Look for various patterns in the stack trace
+  const patterns = [
+    // Pattern for app files: app/filename.tsx:line:column
+    /at .+\/(app\/[^:)]+):(\d+):(\d+)/,
+    // Pattern for components: components/filename.tsx:line:column
+    /at .+\/(components\/[^:)]+):(\d+):(\d+)/,
+    // Pattern for any .tsx/.ts files
+    /at .+\/([^/]+\.tsx?):(\d+):(\d+)/,
+    // Pattern for bundle files with source maps
+    /at .+\/([^/]+\.bundle[^:]*):(\d+):(\d+)/,
+    // Pattern for any JavaScript file
+    /at .+\/([^/\s:)]+\.[jt]sx?):(\d+):(\d+)/
+  ];
+
+  for (const pattern of patterns) {
+    const match = stack.match(pattern);
+    if (match) {
+      return `${match[1]}:${match[2]}:${match[3]}`;
+    }
+  }
+
+  // If no specific pattern matches, try to find any file reference
+  const fileMatch = stack.match(/at .+\/([^/\s:)]+\.[jt]sx?):(\d+)/);
+  if (fileMatch) {
+    return `${fileMatch[1]}:${fileMatch[2]}`;
+  }
+
+  return '';
 };
 
 // Function to get caller information from stack trace
@@ -253,9 +287,9 @@ export const setupErrorLogging = () => {
 
   // Log initialization info using original console (not intercepted)
   const logServerUrl = getLogServerUrl();
-  originalConsoleLog('[Natively] Setting up error logging...');
-  originalConsoleLog('[Natively] Log server URL:', logServerUrl || 'NOT AVAILABLE');
-  originalConsoleLog('[Natively] Platform:', Platform.OS);
+  originalConsoleLog('[Newly] Setting up error logging...');
+  originalConsoleLog('[Newly] Log server URL:', logServerUrl || 'NOT AVAILABLE');
+  originalConsoleLog('[Newly] Platform:', Platform.OS);
 
   // Override console.log to capture and send to server
   console.log = (...args: any[]) => {

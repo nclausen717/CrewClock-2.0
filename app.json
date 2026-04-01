@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CrewClock",
-    "slug": "CrewClock",
+    "slug": "crewclock",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/Screenshot 2026-02-12 at 9.59.57\u202fPM.png",
@@ -36,7 +36,7 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "CrewClock",
+    "scheme": "crewclock",
     "experiments": {
       "typedRoutes": true
     },
